@@ -3,10 +3,12 @@ extends Control
 ## 霓虹 HUD：发光血/耐条、动态准星、换弹环、伤害飘屏、击杀横幅+连击、
 ## 受伤红屏、子弹时间蓝滤镜+扫描线、弹药面板、武器栏、拾取横幅（纯代码绘制）
 
-const CYAN := Color(0.35, 0.95, 1.0)
-const MAGENTA := Color(1.0, 0.35, 0.8)
-const YELLOW := Color(1.0, 0.85, 0.25)
+# Vice City 调色板：热粉 / 迈阿密青 / 椰林金
+const CYAN := Color(0.2, 0.9, 1.0)
+const MAGENTA := Color(1.0, 0.3, 0.75)
+const YELLOW := Color(1.0, 0.82, 0.3)
 const RED := Color(1.0, 0.25, 0.3)
+const CREAM := Color(1.0, 0.95, 0.85)   # VC 奶油白正文
 
 var player: Node
 var weapon: Node
@@ -68,7 +70,7 @@ func _build() -> void:
 	# 弹药数字
 	_ammo_lbl = _mk_label(38, Color.WHITE)
 	_ammo_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_ammo_sub = _mk_label(18, Color(0.75, 0.8, 0.85))
+	_ammo_sub = _mk_label(18, Color(0.92, 0.88, 0.78))
 	_ammo_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	# 换弹
 	_reload_lbl = _mk_label(22, YELLOW)
@@ -435,8 +437,8 @@ func _draw_hint(vp: Vector2) -> void:
 	if _hint_t <= 0.0:
 		return
 	var a := clampf(_hint_t / 2.0, 0.0, 0.85)
-	var txt := "左键 射击    右键 瞄准    R 换弹    1/2/3 切枪    V 子弹时间    F 上车/下车    ESC 暂停    鼠标 转镜头"
-	var r := Rect2(vp.x * 0.5 - 330, vp.y - 52, 660, 34)
-	_round(r, Color(0.03, 0.04, 0.08, a * 0.9), 8.0, Color(CYAN, a), 1.0)
+	var txt := "左键 射击    右键 瞄准    R 换弹    1/2/3 切枪    T 切视角    V 子弹时间    F 交互    ESC 暂停    鼠标 转镜头"
+	var r := Rect2(vp.x * 0.5 - 360, vp.y - 52, 720, 34)
+	_round(r, Color(0.03, 0.04, 0.08, a * 0.9), 8.0, Color(MAGENTA, a), 1.0)
 	_fx.draw_string(ThemeDB.fallback_font, r.position + Vector2(0, 23), txt,
-		HORIZONTAL_ALIGNMENT_CENTER, 660, 16, Color(0.85, 0.95, 1.0, a))
+		HORIZONTAL_ALIGNMENT_CENTER, 720, 16, Color(CREAM, a))

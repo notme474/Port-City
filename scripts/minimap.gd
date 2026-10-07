@@ -109,7 +109,7 @@ func _on_draw() -> void:
 	var c := Vector2(MAP_SIZE * 0.5, MAP_SIZE * 0.5)
 	if not player or not is_instance_valid(player):
 		# 没找到玩家就只画边框
-		_draw.draw_arc(c, MAP_SIZE * 0.5, 0, TAU, 40, Color(0.9, 0.9, 0.9), 3)
+		_draw.draw_arc(c, MAP_SIZE * 0.5, 0, TAU, 40, Color(1.0, 0.3, 0.75, 0.9), 3)
 		return
 	# 玩家箭头（中心点）
 	var yaw: float = player.rotation.y
@@ -134,4 +134,4 @@ func _on_draw() -> void:
 			_draw.draw_circle(mp, 6, m.color)
 		_draw.draw_arc(mp, 10, 0, TAU, 16, Color(1, 1, 1, 0.85), 2)
 	# 边框
-	_draw.draw_arc(c, MAP_SIZE * 0.5, 0, TAU, 40, Color(0.9, 0.9, 0.9), 3)
+	_draw.draw_arc(c, MAP_SIZE * 0.5, 0, TAU, 40, Color(1.0, 0.3, 0.75, 0.9), 3)
