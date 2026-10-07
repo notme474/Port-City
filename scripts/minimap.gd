@@ -9,6 +9,8 @@ const VIEW_HALF := 600.0       # 相机正交半宽（世界单位，左右各�
 var player: Node3D
 var markers := {}            # id -> {pos:Vector3, color:Color, label:String, icon:String}
 var _icons := {}             # 图标缓存（assets/ui 下的 SVG，白色字形乘色使用）
+var _focus_id := ""          # 任务专注：非空时只显示该标记，其余全部隐藏
+var _hidden := {}            # 专注模式下被藏起来的标记（任务结束后恢复）
 
 func _icon(nm: String) -> Texture2D:
 	if not _icons.has(nm):
@@ -84,11 +86,36 @@ func _find_player() -> void:
 		print("[Minimap] player found: ", player.name)
 
 func add_marker(id: String, world_pos: Vector3, color := Color.RED, label := "", icon := "") -> void:
+	# 专注模式下，非焦点标记一律进隐藏区，不显示（防止眼花缭乱）
+	if _focus_id != "" and id != _focus_id:
+		_hidden[id] = {"pos": world_pos, "color": color, "label": label, "icon": icon}
+		return
 	markers[id] = {"pos": world_pos, "color": color, "label": label, "icon": icon}
 	_queue_redraw()
 
 func remove_marker(id: String) -> void:
 	markers.erase(id)
+	_hidden.erase(id)
+	_queue_redraw()
+
+## 任务专注：只显示指定标记，其它全部暂时藏掉
+func set_focus(id: String) -> void:
+	_focus_id = id
+	for k in markers.keys():
+		if k != id:
+			_hidden[k] = markers[k]
+	markers.clear()
+	if _hidden.has(id):
+		markers[id] = _hidden[id]
+		_hidden.erase(id)
+	_queue_redraw()
+
+## 退出任务：恢复所有被藏掉的标记
+func clear_focus() -> void:
+	_focus_id = ""
+	for k in _hidden:
+		markers[k] = _hidden[k]
+	_hidden.clear()
 	_queue_redraw()
 
 func _queue_redraw() -> void:

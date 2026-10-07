@@ -143,7 +143,11 @@ func _load() -> void:
 	# 昼夜
 	var dn := get_parent().get_node_or_null("DayNight")
 	if dn:
-		dn.day_phase = d.get("day_phase", 0.15)
+		var ph: float = d.get("day_phase", 0.03)
+		# 深夜存档（0.30~0.78）恢复时快进到清晨：一进游戏黑灯瞎火体验太差
+		if ph >= 0.30 and ph < 0.78:
+			ph = 0.80
+		dn.day_phase = ph
 		dn.day_idx = int(d.get("day_idx", 1))
 		# 立即应用一次避免闪白
 		dn.call("_apply", true)

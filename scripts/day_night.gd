@@ -18,7 +18,7 @@ const AMBIENT_NIGHT := Color(0.2, 0.22, 0.45)
 var sun: DirectionalLight3D
 var env: Environment
 var moon: DirectionalLight3D
-var day_phase := 0.15            # 0=正午 0.5=午夜 0.75=黎明
+var day_phase := 0.03            # 0=正午 0.5=午夜 0.75=黎明（开局近正午大白天，不再黑天）
 var day_idx := 1
 var _lights: Array[Dictionary] = []  # {light, base_energy, is_car}
 var _city_built := false

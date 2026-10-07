@@ -206,6 +206,7 @@ func _physics_process(delta: float) -> void:
 				stage = Stage.FIGHT
 				if minimap:
 					minimap.remove_marker("cat")
+					minimap.set_focus("mechcat")
 					minimap.add_marker("mechcat", CAT_POS, Color.RED, "咪咪?", "q_cat")
 				_msg("红点处蹲着的就是它……等等，那是咪咪？不对，是机甲猫！用枪打它，或靠近按跳跃键攻击！")
 		Stage.FIGHT:
@@ -251,6 +252,8 @@ func _accept_quest() -> void:
 	# 一接任务猫就在红点处现身（以前要走到 14 米内才 visible，玩家经常找不到）
 	mechcat.visible = true
 	if minimap:
+		# 任务专注：隐藏其它所有标记，只留当前目标
+		minimap.set_focus("cat")
 		minimap.remove_marker("granny")
 		minimap.add_marker("cat", CAT_POS, Color.RED, "找猫", "q_cat")
 	_msg("老奶奶：帮我找找我的猫，它叫咪咪。就在前面不远处（红点），走几步就到！")
@@ -310,6 +313,7 @@ func _start_chase() -> void:
 	granny.global_position = player.global_position + Vector3(20, 0, 20)
 	_granny_red_eyes()
 	if minimap:
+		minimap.set_focus("granny_chase")
 		minimap.add_marker("granny_chase", granny.global_position, Color(1, 0, 0), "老奶奶!")
 	_msg("老奶奶红眼暴走：我的咪咪！你赔我咪咪！快跑 %d 秒！" % int(chase_t))
 
@@ -349,6 +353,8 @@ func _survived() -> void:
 	stage = Stage.DONE
 	if minimap:
 		minimap.remove_marker("granny_chase")
+		# 任务结束：恢复所有被专注模式藏掉的标记
+		minimap.clear_focus()
 		minimap.add_marker("police", POLICE_STATION, Color(0.3, 0.5, 1), "警局")
 	# 老奶奶停下
 	_msg("你活下来了。老奶奶去报警了。（任务完成）")

@@ -19,9 +19,12 @@ const FOV_FIRST_ADS := 72.0
 const FOV_THIRD := 70.0
 const FOV_CHASE := 72.0
 const FP_EYE_H := 1.45           # 第一人称眼高（米）
+const TP_ANCHOR := 1.70          # 第三人称相机锚点：从脚部上移到头/肩（不再对着脚）
+const TP_SHOULDER := 0.45        # 第三人称肩侧偏移（越肩视角）
 
 var camera_rotation: Vector3
 var zoom = 10
+var _mouse_vel := Vector2.ZERO   ## 鼠标速度平滑缓冲（防晕3D）
 
 var _was_captured := false        ## 上一帧鼠标是否处于锁定状态
 var _capture_at_ms := -100000     ## 最近一次进入锁定的时刻（毫秒）
@@ -82,8 +85,10 @@ func _input(event: InputEvent) -> void:
 			var sx: float = pm.get_sensitivity_x() if pm else 0.25
 			var sy: float = pm.get_sensitivity_y() if pm else sx
 			var rel: Vector2 = event.relative.limit_length(80.0)
-			camera_rotation.y -= rel.x * sx
-			camera_rotation.x = clampf(camera_rotation.x - rel.y * sy, -80, 45)
+			# 一丢丢输入平滑（0.82）：削掉鼠标毛刺防晕3D，幅度小到不可察觉
+			_mouse_vel = _mouse_vel.lerp(rel, 0.82)
+			camera_rotation.y -= _mouse_vel.x * sx
+			camera_rotation.x = clampf(camera_rotation.x - _mouse_vel.y * sy, -80, 45)
 			_last_mouse_ms = Time.get_ticks_msec()
 	elif event is InputEventMouseButton and event.pressed:
 		var pm2 := _pause_menu()
@@ -142,7 +147,8 @@ func add_recoil(pitch_deg: float, yaw_deg := 0.0) -> void:
 	_recoil.y = clampf(_recoil.y + deg_to_rad(pitch_deg), -0.05, 0.45)
 
 func add_shake(amount: float) -> void:
-	_shake = clampf(maxf(_shake, amount), 0.0, 0.35)
+	# 震屏上限压低（0.35→0.20）：防晕3D，冲击感仍保留但不晃头
+	_shake = clampf(maxf(_shake, amount), 0.0, 0.20)
 
 # ---------- 驾驶模式切换（vehicle_manager 调用） ----------
 func start_chase(car: Node3D) -> void:
@@ -183,6 +189,9 @@ func _physics_process(delta):
 		_update_chase(delta)
 	else:
 		var target_pos: Vector3 = target.global_position
+		# 第三人称锚点上移到头/肩（VC 式越肩视角），第一人称用眼部
+		if not first_person and chase == null:
+			target_pos += Vector3.UP * TP_ANCHOR
 		# 第一人称始终硬跟（延迟会直接导致晕动）
 		if first_person or pos_rate >= 28.0:
 			self.global_position = target_pos
@@ -234,9 +243,11 @@ func _physics_process(delta):
 	else:
 		var cam_z: float = zoom
 		var cam_y: float = 2.6 if chase != null else 0.0
-		# 第三人称防穿模：从眼位向期望机位做射线，撞到世界(layer 1)就把相机拉到撞点前
-		var eye := Vector3(0, maxf(cam_y, 1.55), 0)
-		var desired := Vector3(bob.x, cam_y, cam_z) + shake_off
+		# 越肩视角：第三人称步行时相机偏向右肩（角色在画面偏左）
+		var shoulder: float = TP_SHOULDER if chase == null else 0.0
+		# 防穿模：从锚点（已上移至头/肩）向期望机位做射线，撞到世界(layer 1)就把相机拉到撞点前
+		var eye := Vector3(shoulder, cam_y, 0)
+		var desired := Vector3(shoulder + bob.x, cam_y, cam_z) + shake_off
 		var space := get_world_3d().direct_space_state
 		var q := PhysicsRayQueryParameters3D.create(
 			to_global(eye), to_global(desired), 1)
@@ -248,7 +259,7 @@ func _physics_process(delta):
 			var pulled: Vector3 = to_local(hit.position)
 			# 留出 0.35m 净空，避免相机贴墙
 			pulled.z -= 0.35
-			pulled.x = bob.x
+			pulled.x = shoulder + bob.x
 			pulled.y += shake_off.y
 			camera.position = pulled
 		else:
