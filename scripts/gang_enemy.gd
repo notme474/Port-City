@@ -36,6 +36,7 @@ const RAM_DMG := 60.0
 const RAM_R := 3.4
 var _muzzle: Node3D
 var _muzzle_light: OmniLight3D
+var _view: Node
 
 func setup(p: Node, gy: float, h: Vector3, is_ranged: bool = false) -> void:
 	player = p
@@ -46,7 +47,17 @@ func setup(p: Node, gy: float, h: Vector3, is_ranged: bool = false) -> void:
 func _ready() -> void:
 	name = "帮派枪手" if ranged else "帮派分子"
 	_build()
+	if get_parent():
+		_view = get_parent().get_node_or_null("../View")
 	set_physics_process(true)
+
+## 锁定位置：玩家驾驶中追车（玩家节点上车后位置冻结，不能直接用）
+func _aim_pos() -> Vector3:
+	if _view:
+		var car: Object = _view.get("chase")
+		if car is Node3D and is_instance_valid(car):
+			return (car as Node3D).global_position
+	return player.global_position
 
 func _build() -> void:
 	_mat = StandardMaterial3D.new()
@@ -152,7 +163,7 @@ func _physics_process(delta: float) -> void:
 	_cd = maxf(0.0, _cd - delta)
 	_ram_cd = maxf(0.0, _ram_cd - delta)
 	_check_car_ram()
-	var pp: Vector3 = player.global_position
+	var pp: Vector3 = _aim_pos()
 	var flat := Vector3(pp.x - global_position.x, 0.0, pp.z - global_position.z)
 	var d := flat.length()
 	if d >= LEASH_R or d >= AGGRO_R and not ranged:
@@ -168,15 +179,9 @@ func _physics_process(delta: float) -> void:
 
 ## 驾驶车辆高速冲撞：直接受伤（敌人无物理碰撞体，用距离+车速判定）
 func _check_car_ram() -> void:
-	if _ram_cd > 0.0:
+	if _ram_cd > 0.0 or _view == null:
 		return
-	var holder := get_parent()
-	if holder == null:
-		return
-	var view: Node = holder.get_node_or_null("../View")
-	if view == null:
-		return
-	var car: Object = view.get("chase")
+	var car: Object = _view.get("chase")
 	if car == null or not (car is Node3D) or not is_instance_valid(car):
 		return
 	var c: Node3D = car as Node3D
@@ -190,8 +195,8 @@ func _check_car_ram() -> void:
 		return
 	_ram_cd = 0.7
 	bullet_hit(RAM_DMG)
-	if view.has_method("add_shake"):
-		view.add_shake(0.35)
+	if _view.has_method("add_shake"):
+		_view.add_shake(0.35)
 
 func _melee_behavior(pp: Vector3, d: float, delta: float) -> void:
 	if d > 0.5:
@@ -252,12 +257,22 @@ func _shoot(pp: Vector3) -> void:
 	if _muzzle_light:
 		_muzzle_light.light_energy = 4.0
 	_tracer(from, to)
-	# 命中：玩家不动时 9 成命中，跑动中 6 成
-	var moving := _speed() > 6.0
-	var hit_chance := 0.6 if moving else 0.9
+	# 命中：静止 9 成；跑动/车辆高速移动更难打中
+	var moving := _target_speed() > 6.0
+	var hit_chance := 0.55 if moving else 0.9
 	if randf() < hit_chance and player.has_method("take_damage"):
 		player.take_damage(SHOOT_DMG)
 		_notify_hud()
+
+## 目标当前移动速度（驾驶中取车速）
+func _target_speed() -> float:
+	if _view:
+		var car: Object = _view.get("chase")
+		if car is CharacterBody3D and is_instance_valid(car):
+			return (car as CharacterBody3D).velocity.length()
+	if player is CharacterBody3D:
+		return (player as CharacterBody3D).velocity.length()
+	return 0.0
 
 ## 通知 HUD 在屏幕边缘显示指向本敌人的受击箭头
 func _notify_hud() -> void:
@@ -265,12 +280,9 @@ func _notify_hud() -> void:
 	if hud == null or not hud.has_method("show_damage_dir"):
 		return
 	var cam_yaw := 0.0
-	var holder := get_parent()
-	if holder:
-		var view: Node = holder.get_node_or_null("../View")
-		if view:
-			cam_yaw = float((view.get("camera_rotation") as Vector3).y)
-	var d: Vector3 = global_position - player.global_position
+	if _view:
+		cam_yaw = float((_view.get("camera_rotation") as Vector3).y)
+	var d: Vector3 = global_position - _aim_pos()
 	d.y = 0.0
 	if d.length() < 0.1:
 		return
@@ -278,11 +290,6 @@ func _notify_hud() -> void:
 	var fwd := Vector3(sin(cam_yaw), 0.0, cos(cam_yaw))
 	var right := Vector3(cos(cam_yaw), 0.0, -sin(cam_yaw))
 	hud.show_damage_dir(Vector2(d.dot(right), d.dot(fwd)))
-
-func _speed() -> float:
-	if player is CharacterBody3D:
-		return (player as CharacterBody3D).velocity.length()
-	return 0.0
 
 ## 红色激光弹道，0.1 秒后消失
 func _tracer(from: Vector3, to: Vector3) -> void:

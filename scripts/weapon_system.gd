@@ -506,7 +506,12 @@ func _apply_hit(hit: Dictionary, w: WeaponData, dist: float, dir: Vector3) -> vo
 	_spawn_damage_label(end, dmg, w.tracer_color, died, mult)
 	hit_confirmed.emit(dmg)
 	if head:
-		var ss := get_parent().get_node_or_null("StatsSystem")
+		# WeaponSystem 是 Player 的子节点，StatsSystem 与 Player 同属主场景根
+		var ss: Node = null
+		if player:
+			ss = player.get_parent().get_node_or_null("StatsSystem")
+		if ss == null and get_tree().current_scene:
+			ss = get_tree().current_scene.get_node_or_null("StatsSystem")
 		if ss and ss.has_method("add_stat"):
 			ss.add_stat("headshots", 1.0)
 	if died:

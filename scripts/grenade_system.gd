@@ -144,9 +144,9 @@ func _explode(pos: Vector3) -> void:
 			continue
 		if node is Node and (node as Node).is_in_group("player"):
 			continue   # 玩家单独按距离算
-		# 行人：炸倒并计入通缉
+		# 行人：炸倒并计入通缉（已倒地的不重复计数）
 		if node is Node and (node as Node).is_in_group("npc"):
-			if node.has_method("take_damage"):
+			if node.get("_dead") != true and node.has_method("take_damage"):
 				node.take_damage(100.0)
 				npc_killed += 1
 			continue
