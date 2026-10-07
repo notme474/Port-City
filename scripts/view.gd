@@ -1,5 +1,7 @@
 extends Node3D
 
+signal view_mode_changed(first_person: bool)
+
 @export_group("Properties")
 @export var target: Node
 
@@ -11,7 +13,14 @@ extends Node3D
 @export_group("Rotation")
 @export var rotation_speed = 120
 
-var camera_rotation:Vector3
+# 视野档位（行业常用值）：第一人称 85° 更广、第三人称 70° 更稳
+const FOV_FIRST := 85.0
+const FOV_FIRST_ADS := 72.0
+const FOV_THIRD := 70.0
+const FOV_CHASE := 72.0
+const FP_EYE_H := 1.45           # 第一人称眼高（米）
+
+var camera_rotation: Vector3
 var zoom = 10
 
 var _was_captured := false        ## 上一帧鼠标是否处于锁定状态
@@ -24,51 +33,63 @@ var _reverse_t := 0.0             ## 倒车持续时间（满 0.4s 镜头转去�
 var _reversing := false
 var _bob_t := 0.0                 ## 行走镜头抖动的相位（随移动速度推进）
 
+# ---------- 视角模式 ----------
+var first_person := false         ## true=第一人称（隐藏身体，枪挂到相机）
+var _fp_aiming := false
+
+# ---------- 后坐力 / 震屏 ----------
+var _recoil := Vector2.ZERO       # (偏航, 俯仰) 弧度，自动衰减回零，不污染基础视角
+var _shake := 0.0                 # 震屏幅度（米），自动衰减
+var _was_floor := true
+
 @onready var camera = $Camera
 
 func _ready():
-	camera_rotation = rotation_degrees # Initial rotation
+	camera_rotation = rotation_degrees
+	camera.fov = FOV_THIRD
+	_reg_action("toggle_view", KEY_T)
+	_load_view_pref()
+
+func _reg_action(act: String, key: Key) -> void:
+	if not InputMap.has_action(act):
+		InputMap.add_action(act)
+		var ev := InputEventKey.new()
+		ev.physical_keycode = key
+		InputMap.action_add_event(act, ev)
 
 func _notification(what: int) -> void:
-	# 窗口失焦（Alt-Tab/点到别的窗口）时释放全部相机动作，
-	# 否则丢失的 key-up / 摇杆回中事件会让镜头一直朝一个方向狂转
+	# 窗口失焦（Alt-Tab/点到别的窗口）时释放全部相机动作
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		for action in ["camera_left", "camera_right", "camera_up", "camera_down", "zoom_in", "zoom_out"]:
 			Input.action_release(action)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 ## 鼠标转镜头放在 _input（GUI 过滤之前），确保任何时候真实鼠标移动都能收到。
-## 暂停时本节点（PAUSABLE）不接收输入回调，不会和菜单冲突。
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and event.relative.length() > 0.01:
 		var pm := _pause_menu()
-		# 鼠标一旦真实移动就视为键鼠输入（手柄漂移/坏存档也能立刻恢复转镜头）
 		if pm and pm.has_method("note_mouse_active"):
 			pm.note_mouse_active()
 		_track_capture()
-		# 只有鼠标被锁定时才转镜头：光标自由滑动（暂停/失焦/手柄模式）绝不转视角，
-		# 否则光标一次跨屏移动就是几百度的甩镜
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			return
-		# 刚进入锁定的 120ms 内忽略所有移动：锁定瞬间系统会产生一次
-		# "从旧位置跳到屏幕中心"的大位移事件，不忽略就会疯甩一下
+		# 刚进入锁定的 120ms 内忽略所有移动
 		if Time.get_ticks_msec() - _capture_at_ms < 120:
 			return
 		var kbm: bool = pm == null or pm.is_kbm()
 		if kbm:
-			var s: float = pm.get_sensitivity() if pm else 0.25
-			# 单次位移限幅：过滤异常大的一次性事件（快速甩动略受限，可接受）
+			# 水平/垂直灵敏度可分别调节
+			var sx: float = pm.get_sensitivity_x() if pm else 0.25
+			var sy: float = pm.get_sensitivity_y() if pm else sx
 			var rel: Vector2 = event.relative.limit_length(80.0)
-			camera_rotation.y -= rel.x * s
-			camera_rotation.x = clampf(camera_rotation.x - rel.y * s, -80, 45)
+			camera_rotation.y -= rel.x * sx
+			camera_rotation.x = clampf(camera_rotation.x - rel.y * sy, -80, 45)
 			_last_mouse_ms = Time.get_ticks_msec()
 	elif event is InputEventMouseButton and event.pressed:
-		# 点回窗口时确保鼠标锁定
 		var pm2 := _pause_menu()
 		if pm2 == null or pm2.is_kbm():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-## 检测"刚进入鼠标锁定"的时刻，用于忽略锁定瞬间的一次性跳变事件
 func _track_capture() -> void:
 	var cap: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	if cap and not _was_captured:
@@ -78,12 +99,58 @@ func _track_capture() -> void:
 func _pause_menu() -> Node:
 	return get_tree().current_scene.get_node_or_null("PauseMenu")
 
+# ---------- 视角切换 ----------
+func toggle_view() -> void:
+	if chase != null:
+		return   # 驾驶中强制追尾，不允许第一人称
+	_set_first_person(not first_person)
+
+func _set_body_visible(v: bool) -> void:
+	if target and "model" in target:
+		var m: Node = target.get("model")
+		if m:
+			m.visible = v
+
+func _set_first_person(v: bool) -> void:
+	if first_person == v:
+		return
+	first_person = v
+	# 切换瞬间清掉后坐/震幅，避免残留偏移
+	_recoil = Vector2.ZERO
+	_shake = 0.0
+	_set_body_visible(not v)
+	view_mode_changed.emit(v)
+	# 偏好持久化到设置文件
+	var pm := _pause_menu()
+	if pm and pm.has_method("set_view_pref"):
+		pm.set_view_pref(v)
+
+func _load_view_pref() -> void:
+	# PauseMenu 可能尚未就绪，延迟几帧尝试读取
+	for i in 5:
+		var pm := _pause_menu()
+		if pm and pm.has_method("get_view_pref"):
+			first_person = bool(pm.get_view_pref())
+			_set_body_visible(not first_person)
+			view_mode_changed.emit(first_person)
+			return
+		await get_tree().process_frame
+
+# ---------- 外部接口：后坐力 / 震屏（武器、受伤调用） ----------
+func add_recoil(pitch_deg: float, yaw_deg := 0.0) -> void:
+	_recoil.x = clampf(_recoil.x + deg_to_rad(yaw_deg), -0.25, 0.25)
+	_recoil.y = clampf(_recoil.y + deg_to_rad(pitch_deg), -0.05, 0.45)
+
+func add_shake(amount: float) -> void:
+	_shake = clampf(maxf(_shake, amount), 0.0, 0.35)
+
 # ---------- 驾驶模式切换（vehicle_manager 调用） ----------
 func start_chase(car: Node3D) -> void:
 	chase = car
+	if first_person:
+		_set_first_person(false)
 	if car and car.view_target:
 		target = car.view_target
-	# 镜头先放到车后方
 	camera_rotation.y = _car_heading_deg(car)
 	camera_rotation.x = clampf(camera_rotation.x, -20.0, 25.0)
 	_reverse_t = 0.0
@@ -94,45 +161,105 @@ func end_chase() -> void:
 	_reversing = false
 
 func _car_heading_deg(car: Node3D) -> float:
-	# 车辆物理前向为 -Z（yaw=0 时朝 -Z 开），所以车头朝向 = yaw + 180
 	return wrapf(car.global_rotation_degrees.y + 180.0, -180.0, 180.0)
 
 func _physics_process(delta):
 	_track_capture()
 
+	# T 键切换第一/第三人称
+	if Input.is_action_just_pressed("toggle_view"):
+		toggle_view()
+
+	# 后坐力自动回位（约 0.3s），震屏快速衰减
+	_recoil = _recoil.lerp(Vector2.ZERO, clampf(delta * 9.0, 0.0, 1.0))
+	_shake = maxf(0.0, _shake - delta * 1.4)
+
+	# 跟随：灵敏度菜单里的"镜头跟随"0=零延迟硬跟，越大越柔和
+	var pm_s := _pause_menu()
+	var follow: float = pm_s.get_follow() if pm_s and pm_s.has_method("get_follow") else 0.0
+	var pos_rate := lerpf(32.0, 7.0, clampf(follow, 0.0, 1.0))
+
 	if chase != null and is_instance_valid(chase):
 		_update_chase(delta)
 	else:
-		# 位置硬跟目标：零弹性，人在哪镜头就在哪
-		self.global_position = target.global_position
-	# 朝向硬跟：镜头角度即所见角度，没有任何平滑/惯性
-	rotation_degrees = camera_rotation
+		var target_pos: Vector3 = target.global_position
+		# 第一人称始终硬跟（延迟会直接导致晕动）
+		if first_person or pos_rate >= 28.0:
+			self.global_position = target_pos
+		else:
+			self.global_position = self.global_position.lerp(target_pos, clampf(delta * pos_rate, 0.0, 1.0))
+	# 基础朝向硬跟输入，叠加可恢复的后坐角
+	rotation_degrees = camera_rotation + Vector3(rad_to_deg(_recoil.y), rad_to_deg(_recoil.x), 0.0)
 
-	# 按住右键瞄准时镜头拉近（驾驶中不瞄准，镜头保持追尾距离）
-	var aiming: bool = chase == null and InputMap.has_action("aim") and Input.is_action_pressed("aim")
-	var zoom_target := 4.0 if aiming else (12.5 if chase != null else 10.0)
+	# 瞄准 / 变焦（aim 动作由武器系统运行时注册，首帧可能尚不存在）
+	var aim_held: bool = InputMap.has_action("aim") and Input.is_action_pressed("aim")
+	_fp_aiming = first_person and chase == null and aim_held
+	var zoom_target: float
+	var fov_target: float
+	if chase != null:
+		zoom_target = 12.5
+		fov_target = FOV_CHASE
+	elif first_person:
+		zoom_target = 0.0
+		fov_target = FOV_FIRST_ADS if _fp_aiming else FOV_FIRST
+	else:
+		zoom_target = 4.0 if aim_held else 10.0
+		fov_target = FOV_THIRD
 	zoom = lerpf(zoom, zoom_target, delta * 6)
+	camera.fov = lerpf(camera.fov, fov_target, clampf(delta * 10.0, 0.0, 1.0))
 
-	# 行走镜头抖动：步伐带动极轻微上下颠 + 左右晃，随速度增强、停下即消失
-	# 幅度刻意压到厘米级（上下 2.8cm / 左右 1.8cm），只给"在走"的体感，不晃眼
+	# 行走镜头抖动：厘米级（上下 2.8cm / 左右 1.8cm），驾驶/第一人称静止时不抖
 	var bob := Vector3.ZERO
-	if chase == null and target != null:
+	if chase == null and target != null and not first_person:
 		var vel: Vector3 = target.get("velocity") if "velocity" in target else Vector3.ZERO
 		var hs: float = Vector2(vel.x, vel.z).length()
 		_bob_t += delta * hs * 1.05
 		var amp: float = clampf(hs / 7.0, 0.0, 1.0)
 		bob = Vector3(cos(_bob_t) * 0.018, sin(_bob_t * 2.0) * 0.028, 0.0) * amp
-	var cam_y: float = 2.6 if chase != null else 0.0
-	camera.position = Vector3(bob.x, cam_y + bob.y, zoom)
+
+	# 落地轻微震一下（落地瞬间垂直速度大）
+	if chase == null and target != null:
+		var on_floor: bool = bool(target.is_on_floor()) if target is CharacterBody3D else true
+		if on_floor and not _was_floor:
+			add_shake(0.05)
+		_was_floor = on_floor
+
+	# 相机位置
+	var shake_off := Vector3.ZERO
+	if _shake > 0.001:
+		shake_off = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * _shake
+	if first_person:
+		# 眼睛位置；贴脸 z=0，随瞄准微微前移
+		camera.position = Vector3(bob.x * 0.5, FP_EYE_H, -0.08) + shake_off
+	else:
+		var cam_z: float = zoom
+		var cam_y: float = 2.6 if chase != null else 0.0
+		# 第三人称防穿模：从眼位向期望机位做射线，撞到世界(layer 1)就把相机拉到撞点前
+		var eye := Vector3(0, maxf(cam_y, 1.55), 0)
+		var desired := Vector3(bob.x, cam_y, cam_z) + shake_off
+		var space := get_world_3d().direct_space_state
+		var q := PhysicsRayQueryParameters3D.create(
+			to_global(eye), to_global(desired), 1)
+		q.collide_with_areas = false
+		if target is CollisionObject3D:
+			q.exclude = [(target as CollisionObject3D).get_rid()]
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty():
+			var pulled: Vector3 = to_local(hit.position)
+			# 留出 0.35m 净空，避免相机贴墙
+			pulled.z -= 0.35
+			pulled.x = bob.x
+			pulled.y += shake_off.y
+			camera.position = pulled
+		else:
+			camera.position = desired
 
 	handle_input(delta)
 
-## 追尾相机：硬锁定车后方，零惯性；刚动鼠标 0.9s 内不回正，保留自由环顾；
-## 持续倒车时镜头转到车头前方，方便倒车看路
+## 追尾相机：硬锁定车后方；动鼠标 0.9s 内不回正；持续倒车转到车头前方
 func _update_chase(delta: float) -> void:
 	var car: Node3D = chase
 	var aim_pos: Vector3 = car.view_target.global_position if car.view_target else car.global_position
-	# 跟随点抬高 1.1m 越过车顶看路，硬跟不拖影
 	self.global_position = aim_pos + Vector3.UP * 1.1
 
 	var speed: float = float(car.get("_speed"))
@@ -145,7 +272,6 @@ func _update_chase(delta: float) -> void:
 	elif speed > 0.6:
 		_reversing = false
 
-	# 玩家正在动鼠标环顾 → 不抢镜头；松开后镜头立刻掰回车后方
 	var free_look: bool = Time.get_ticks_msec() - _last_mouse_ms < 900
 	if not free_look:
 		camera_rotation.y = _car_heading_deg(car) + (180.0 if _reversing else 0.0)
@@ -156,12 +282,8 @@ func handle_input(delta):
 	var pm := _pause_menu()
 	var kbm: bool = pm == null or pm.is_kbm()
 
-	# Rotation
 	var input := Vector3.ZERO
 	if kbm:
-		# 键鼠模式：方向键仍可转镜头，但绝不读游戏摇杆轴——
-		# 噪声手柄的摇杆漂移连在 camera_left/right 动作上，
-		# 以前它能在键鼠模式下让镜头永远自己转（疯转停不下来的根因）
 		input.y = float(Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_LEFT))
 		input.x = float(Input.is_physical_key_pressed(KEY_DOWN)) - float(Input.is_physical_key_pressed(KEY_UP))
 	else:
@@ -171,6 +293,5 @@ func handle_input(delta):
 	camera_rotation += input.limit_length(1.0) * rotation_speed * delta
 	camera_rotation.x = clamp(camera_rotation.x, -80, 45)
 
-	# Zooming（键鼠滚轮走 zoom 动作，手柄走摇杆键）
 	zoom += Input.get_axis("zoom_in", "zoom_out") * zoom_speed * delta
 	zoom = clamp(zoom, zoom_maximum, zoom_minimum)
