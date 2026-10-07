@@ -136,16 +136,18 @@ func _clear_camp(i: int) -> void:
 	var ring: MeshInstance3D = s["ring"]
 	if ring and ring.material_override:
 		var m := (ring.material_override as StandardMaterial3D)
-		m.albedo_color = Color(0.2, 0.9, 0.4, 0.4)
+		m.albedo_color = Color(0.2, 0.9, 0.4, 0.16)
 		m.emission = Color(0.2, 0.9, 0.4)
+		m.emission_energy_multiplier = 0.4
 	var beam: MeshInstance3D = s["beam"]
 	if beam:
 		var bm2 := StandardMaterial3D.new()
-		bm2.albedo_color = Color(0.2, 0.9, 0.4, 0.28)
+		bm2.albedo_color = Color(0.2, 0.9, 0.4, 0.12)
 		bm2.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		bm2.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		bm2.emission_enabled = true
 		bm2.emission = Color(0.2, 0.9, 0.4)
+		bm2.emission_energy_multiplier = 0.3
 		bm2.cull_mode = BaseMaterial3D.CULL_DISABLED
 		beam.material_override = bm2
 	_banner("据点已肃清 · %s" % str(c["name"]), "+%d 金币" % REWARD, Color(0.3, 1, 0.5), 3.0)
@@ -153,21 +155,19 @@ func _clear_camp(i: int) -> void:
 # ---------- 视觉 ----------
 func _make_ring(gy: float) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = CAMP_R
-	cm.bottom_radius = CAMP_R
-	cm.height = 0.15
-	mi.mesh = cm
+	var tm := TorusMesh.new()
+	tm.inner_radius = CAMP_R - 0.7
+	tm.outer_radius = CAMP_R
+	mi.mesh = tm
+	mi.rotation.x = deg_to_rad(90.0)
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(1, 0.15, 0.15, 0.32)
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(1, 0.15, 0.15)
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.emission_enabled = true
 	m.emission = Color(1, 0.1, 0.1)
-	m.emission_energy_multiplier = 1.1
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.emission_energy_multiplier = 1.0
 	mi.material_override = m
-	mi.position.y = 0.12
+	mi.position.y = 0.35
 	return mi
 
 func _make_beam(_gy2: float) -> MeshInstance3D:
@@ -178,12 +178,12 @@ func _make_beam(_gy2: float) -> MeshInstance3D:
 	cm.height = 30.0
 	mi.mesh = cm
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.7, 0.2, 1.0, 0.22)
+	m.albedo_color = Color(0.7, 0.2, 1.0, 0.07)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.emission_enabled = true
 	m.emission = Color(0.7, 0.2, 1.0)
-	m.emission_energy_multiplier = 0.8
+	m.emission_energy_multiplier = 0.18
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.material_override = m
 	mi.position.y = 15.0
@@ -228,5 +228,6 @@ func _apply_save(arr: Array) -> void:
 			s["state"] = 2
 			var ring: MeshInstance3D = s["ring"]
 			if ring and ring.material_override:
-				(ring.material_override as StandardMaterial3D).albedo_color = Color(0.2, 0.9, 0.4, 0.4)
+				(ring.material_override as StandardMaterial3D).albedo_color = Color(0.2, 0.9, 0.4, 0.16)
 				(ring.material_override as StandardMaterial3D).emission = Color(0.2, 0.9, 0.4)
+				(ring.material_override as StandardMaterial3D).emission_energy_multiplier = 0.4

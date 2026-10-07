@@ -21,10 +21,9 @@ var races := [
 		Vector3(604, 0, -60), Vector3(604, 0, 4), Vector3(412, 0, 4),
 		Vector3(348, 0, 4), Vector3(348, 0, -124), Vector3(348, 0, -252)],
 		"g": 55.0, "s": 75.0, "b": 100.0},
-	{"name": "都市连线", "pts": [Vector3(348, 0, -188), Vector3(333, 0, -130),
-		Vector3(333, 0, -240), Vector3(412, 0, -252), Vector3(412, 0, -188),
-		Vector3(348, 0, -188)],
-		"g": 45.0, "s": 60.0, "b": 85.0},
+	{"name": "都市连线", "pts": [Vector3(333, 0, -130), Vector3(333, 0, -240),
+		Vector3(412, 0, -252), Vector3(412, 0, -188), Vector3(333, 0, -130)],
+		"g": 40.0, "s": 55.0, "b": 75.0},
 ]
 var best: Array = [0.0, 0.0, 0.0]   # 每条赛道最佳秒数，0=未完成
 
@@ -78,17 +77,18 @@ func _build_cp_marker() -> void:
 	_cp_marker.add_child(_cp_beam)
 	var ring_mat := StandardMaterial3D.new()
 	ring_mat.albedo_color = Color(0.25, 0.9, 1.0)
+	ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	ring_mat.emission_enabled = true
 	ring_mat.emission = Color(0.25, 0.9, 1.0)
-	ring_mat.emission_energy_multiplier = 2.0
+	ring_mat.emission_energy_multiplier = 1.0
 	_cp_ring = MeshInstance3D.new()
-	var rm := CylinderMesh.new()
-	rm.top_radius = CP_R
-	rm.bottom_radius = CP_R
-	rm.height = 0.12
+	var rm := TorusMesh.new()
+	rm.inner_radius = CP_R - 0.8
+	rm.outer_radius = CP_R
 	_cp_ring.mesh = rm
+	_cp_ring.rotation.x = deg_to_rad(90.0)
 	_cp_ring.material_override = ring_mat
-	_cp_ring.position.y = 0.1
+	_cp_ring.position.y = 0.3
 	_cp_marker.add_child(_cp_ring)
 	var area := Area3D.new()
 	area.name = "Area"
@@ -117,18 +117,19 @@ func _make_marker(col: Color, gy: float) -> Node3D:
 	beam.position.y = 6.0
 	m.add_child(beam)
 	var ring := MeshInstance3D.new()
-	var rm := CylinderMesh.new()
-	rm.top_radius = 4.0
-	rm.bottom_radius = 4.0
-	rm.height = 0.12
+	var rm := TorusMesh.new()
+	rm.inner_radius = 3.4
+	rm.outer_radius = 4.2
 	var rmat := StandardMaterial3D.new()
 	rmat.albedo_color = col
+	rmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	rmat.emission_enabled = true
 	rmat.emission = col
-	rmat.emission_energy_multiplier = 2.0
+	rmat.emission_energy_multiplier = 1.0
 	ring.mesh = rm
+	ring.rotation.x = deg_to_rad(90.0)
 	ring.material_override = rmat
-	ring.position.y = 0.1
+	ring.position.y = 0.3
 	m.add_child(ring)
 	var area := Area3D.new()
 	area.name = "Area"
@@ -146,12 +147,12 @@ func _make_marker(col: Color, gy: float) -> Node3D:
 
 func _beam_mat(col: Color) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(col.r, col.g, col.b, 0.35)
+	m.albedo_color = Color(col.r, col.g, col.b, 0.08)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.emission_enabled = true
 	m.emission = col
-	m.emission_energy_multiplier = 0.9
+	m.emission_energy_multiplier = 0.18
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
 

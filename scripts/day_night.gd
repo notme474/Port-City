@@ -12,7 +12,7 @@ const NIGHT_LIGHT_OFF := 0.78   # 清晨关灯
 const SKY_DAY := Color(0.38, 0.68, 0.96)
 const SKY_DAWN := Color(1.0, 0.38, 0.5)
 const SKY_NIGHT := Color(0.05, 0.07, 0.18)
-const AMBIENT_DAY := Color(0.92, 0.9, 0.96)
+const AMBIENT_DAY := Color(0.84, 0.83, 0.9)
 const AMBIENT_NIGHT := Color(0.2, 0.22, 0.45)
 
 var sun: DirectionalLight3D
@@ -118,10 +118,10 @@ func _apply(immediate: bool) -> void:
 		var f := day_phase / 0.25
 		sky_col = SKY_DAY.lerp(SKY_DAWN, f * f)
 		amb_col = AMBIENT_DAY
-		sun_energy = lerpf(1.0, 0.55, f)
+		sun_energy = lerpf(0.92, 0.55, f)
 		moon_energy = 0.0
-		bg_mult = lerpf(1.0, 0.6, f)
-		tone_exp = lerpf(1.0, 0.8, f)
+		bg_mult = lerpf(0.9, 0.6, f)
+		tone_exp = lerpf(0.95, 0.8, f)
 	elif day_phase < 0.35:        # 黄昏
 		var f := (day_phase - 0.25) / 0.1
 		sky_col = SKY_DAWN.lerp(SKY_NIGHT, f)
@@ -142,10 +142,10 @@ func _apply(immediate: bool) -> void:
 		var f := (day_phase - 0.75) / 0.25
 		sky_col = SKY_NIGHT.lerp(SKY_DAY, f * f)
 		amb_col = AMBIENT_NIGHT.lerp(AMBIENT_DAY, f)
-		sun_energy = lerpf(0.0, 1.0, f)
+		sun_energy = lerpf(0.0, 0.92, f)
 		moon_energy = lerpf(0.28, 0.0, f)
-		bg_mult = lerpf(0.18, 1.0, f)
-		tone_exp = lerpf(0.45, 1.0, f)
+		bg_mult = lerpf(0.18, 0.9, f)
+		tone_exp = lerpf(0.45, 0.95, f)
 
 	# 太阳颜色随高度变暖（VC 金橙色阳光，日出日落偏品红橙）
 	if sun_energy > 0.01:
