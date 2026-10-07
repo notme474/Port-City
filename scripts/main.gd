@@ -128,6 +128,11 @@ func _load_systems() -> void:
 	camps.name = "GangCamps"
 	camps.set_script(load("res://scripts/gang_camps.gd"))
 	add_child(camps)
+	# 特技跳跃台（4 处斜坡 + 腾空计分）
+	var stunts := Node3D.new()
+	stunts.name = "StuntRamps"
+	stunts.set_script(load("res://scripts/stunt_ramps.gd"))
+	add_child(stunts)
 	# 城市行人（layer 4，NPC 互不碰撞，沿道路散步，接入通缉撞人判定）
 	var npcs := Node3D.new()
 	npcs.name = "CityNpcs"
