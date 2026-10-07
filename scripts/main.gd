@@ -153,3 +153,20 @@ func _load_systems() -> void:
 	death.name = "DeathSystem"
 	death.set_script(load("res://scripts/death_fx.gd"))
 	add_child(death)
+	call_deferred("_intro_tips")
+
+## 开场玩法导览：延时轮播新内容提示
+func _intro_tips() -> void:
+	await get_tree().create_timer(4.0).timeout
+	var tips := [
+		["欢迎来到港城 VICE CITY", "抢车、枪战、探索东岸新城", Color(1.0, 0.3, 0.75)],
+		["黄色光柱 = 竞速起点", "紫光柱红圈 = 帮派据点", Color(1.0, 0.82, 0.2)],
+		["粉色钻石 = 隐藏包裹", "全城 20 个，每个 500 金", Color(1.0, 0.4, 0.85)],
+		["按 G 投掷手雷", "路口橙色斜坡可以特技飞跃", Color(0.25, 0.9, 1.0)],
+		["路边物资定时刷新", "医疗包 / 弹药 / 钱袋 / 警星消通缉", Color(0.3, 1.0, 0.5)],
+	]
+	for t in tips:
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("_show_banner"):
+			hud._show_banner("%s   %s" % [String(t[0]), String(t[1])], t[2], 4.5)
+		await get_tree().create_timer(6.5).timeout
