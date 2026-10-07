@@ -18,9 +18,16 @@ var hud_msg: Label
 var coin_lbl: Label
 var granny: Node3D
 var mechcat: Node3D
+var _mech_mdl: Node3D
+var _mech_light: OmniLight3D
+var _mech_base_y := 0.0
+var _mech_punch := 0.0
+var _anim_t := 0.0
 var mechcat_hp := 5
 var chase_t := 0.0
 var chase_speed := 7.5
+
+const GRANNY_HIDE := ["Mage_Hat", "1H_Wand", "2H_Staff", "Spellbook", "Spellbook_open"]
 
 func _ready() -> void:
 	call_deferred("_setup")
@@ -63,13 +70,31 @@ func _spawn_granny() -> void:
 	granny.name = "老奶奶"
 	granny.position = GRANNY_POS
 	add_child(granny)
-	# KayKit 法师（紫袍抽象小人，×0.85≈2.55m，贴地）
+	# KayKit 法师改造为老奶奶：原始模型含尖顶帽高达 3.0m，
+	# 隐藏帽子/法杖/法术书后身高约 2.2m，×0.72 ≈ 1.58m（符合老人身高规格）
 	var sc: PackedScene = load(M + "kaykit/Mage.glb")
 	if sc:
 		var mdl: Node3D = sc.instantiate()
-		ModelUtil.snap_to_ground(mdl, 0.85)
+		for nm in GRANNY_HIDE:
+			var hider: Node = mdl.find_child(nm, true, false)
+			if hider:
+				hider.visible = false
+		ModelUtil.snap_to_ground(mdl, 0.72)
 		granny.add_child(mdl)
 		_play_npc_anim(mdl, "Idle")
+	# 与视觉匹配的碰撞胶囊（layer 1，玩家 mask 命中，不会再穿模）
+	var body := StaticBody3D.new()
+	body.name = "GrannyCollider"
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var gcs := CollisionShape3D.new()
+	var gcap := CapsuleShape3D.new()
+	gcap.radius = 0.35
+	gcap.height = 1.4
+	gcs.shape = gcap
+	gcs.position.y = 0.7
+	body.add_child(gcs)
+	granny.add_child(body)
 	# GTA 式黄色任务光圈：走进圈即接任务
 	_spawn_quest_marker(GRANNY_POS, "帮老奶奶找猫")
 
@@ -88,16 +113,19 @@ func _spawn_mechcat() -> void:
 	add_child(mechcat)
 	var sc: PackedScene = load(M + "mechcat.glb")
 	if sc:
-		var mdl: Node3D = sc.instantiate()
-		ModelUtil.snap_to_ground(mdl, 6.0)
-		mechcat.add_child(mdl)
+		_mech_mdl = sc.instantiate()
+		ModelUtil.snap_to_ground(_mech_mdl, 6.0)
+		mechcat.add_child(_mech_mdl)
+		_mech_base_y = _mech_mdl.position.y
 	var l := OmniLight3D.new()
 	l.light_color = Color.RED
 	l.light_energy = 3.0
 	l.omni_range = 20
 	l.position.y = 5
 	mechcat.add_child(l)
+	_mech_light = l
 	# 枪械可命中区域（layer 2，武器射线 mask=3 可打中）
+	# 实测模型视觉盒 7.5×8.2×7.5（×6），命中盒按视觉略内缩，避免隔空中弹
 	var ha := Area3D.new()
 	ha.name = "HitArea"
 	ha.collision_layer = 2
@@ -105,9 +133,9 @@ func _spawn_mechcat() -> void:
 	mechcat.add_child(ha)
 	var cs := CollisionShape3D.new()
 	var sh := BoxShape3D.new()
-	sh.size = Vector3(4, 6, 7)
+	sh.size = Vector3(7.0, 7.6, 7.0)
 	cs.shape = sh
-	cs.position = Vector3(0, 3, 0)
+	cs.position = Vector3(0, 3.8, 0)
 	ha.add_child(cs)
 
 ## 播放 NPC 模型的动画（KayKit 模型内置 AnimationPlayer）
@@ -120,6 +148,7 @@ func _play_npc_anim(mdl: Node, anim: String) -> void:
 func bullet_hit(amount: float) -> bool:
 	if stage != Stage.FIGHT:
 		return false
+	_mech_punch = 1.0
 	mechcat_hp -= max(1, int(amount / 25.0))
 	var dir := (mechcat.global_position - player.global_position)
 	dir.y = 0
@@ -151,19 +180,48 @@ func _spawn_police_station() -> void:
 func _physics_process(delta: float) -> void:
 	if player == null:
 		return
+	# 待机/找猫阶段老奶奶缓慢面向玩家（不会背身说话）
+	if stage == Stage.IDLE or stage == Stage.FIND_CAT:
+		_idle_face_player(delta)
+	# 机甲猫只要在场就有悬浮/灯光脉动的程序化动画
+	if mechcat and mechcat.visible and is_instance_valid(mechcat):
+		_animate_mechcat(delta)
 	match stage:
 		Stage.FIND_CAT:
 			if player.global_position.distance_to(CAT_POS) < FIGHT_R:
 				stage = Stage.FIGHT
-				mechcat.visible = true
 				if minimap:
 					minimap.remove_marker("cat")
 					minimap.add_marker("mechcat", CAT_POS, Color.RED, "咪咪?", "q_cat")
-				_msg("红点处蹲着的就是它……等等，那是咪咪？不对，是机甲猫！打败它！（靠近按跳跃键攻击）")
+				_msg("红点处蹲着的就是它……等等，那是咪咪？不对，是机甲猫！用枪打它，或靠近按跳跃键攻击！")
 		Stage.FIGHT:
 			_fight(delta)
 		Stage.CHASE:
 			_chase(delta)
+
+func _idle_face_player(delta: float) -> void:
+	if granny == null:
+		return
+	var d: Vector3 = player.global_position - granny.global_position
+	d.y = 0
+	if d.length() > 0.5:
+		var want: float = atan2(d.x, d.z)
+		granny.rotation.y = lerp_angle(granny.rotation.y, want, clampf(delta * 3.0, 0.0, 1.0))
+
+## 机甲猫程序化动画：悬浮起伏 + 机身微摆 + 红眼灯脉动 + 受击缩放回弹
+func _animate_mechcat(delta: float) -> void:
+	_anim_t += delta
+	_mech_punch = maxf(0.0, _mech_punch - delta * 4.0)
+	var moving: bool = stage == Stage.FIGHT
+	if _mech_mdl and is_instance_valid(_mech_mdl):
+		var bob_hz: float = 3.2 if moving else 1.6
+		var bob_amp: float = 0.18 if moving else 0.12
+		_mech_mdl.position.y = _mech_base_y + sin(_anim_t * bob_hz) * bob_amp
+		_mech_mdl.rotation.z = sin(_anim_t * 0.9) * 0.03
+		var punch_s: float = 6.0 + _mech_punch * 0.9
+		_mech_mdl.scale = Vector3.ONE * punch_s
+	if _mech_light and is_instance_valid(_mech_light):
+		_mech_light.light_energy = 2.4 + sin(_anim_t * 5.0) * 0.7 + _mech_punch * 6.0
 
 func _input(event: InputEvent) -> void:
 	if player == null:
@@ -196,10 +254,13 @@ func _fight(delta: float) -> void:
 		if player.has_method("take_damage"):
 			player.take_damage(8.0)
 			_msg("机甲猫用车门拍打你！血量-%d  剩余HP:%d" % [8, player.hp])
-	mechcat.rotation.y = atan2(dir.x, dir.z)
+	# 平滑转向（避免硬切镜头跳变）
+	var want_yaw: float = atan2(dir.x, dir.z)
+	mechcat.rotation.y = lerp_angle(mechcat.rotation.y, want_yaw, clampf(delta * 6.0, 0.0, 1.0))
 
 func _hit_mechcat() -> void:
 	mechcat_hp -= 1
+	_mech_punch = 1.0
 	var dir := (mechcat.global_position - player.global_position)
 	dir.y = 0
 	mechcat.global_position += dir.normalized() * 3.0
