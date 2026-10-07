@@ -29,6 +29,9 @@ var gravity = 0
 var anim_locked := ""
 var aim_facing := false
 
+## 商店/对话等占用输入时锁定移动与跳跃（镜头仍可看）
+var input_locked := false
+
 var previously_floored = false
 
 var jump_single = true
@@ -70,7 +73,10 @@ func _physics_process(delta):
 
 	var applied_velocity: Vector3
 
-	applied_velocity = velocity.lerp(movement_velocity, delta * 10)
+	# VC 手感：起速稍猛、收油即停（加速/减速曲线分离）
+	var has_move_input: bool = movement_velocity.length() > 0.001
+	var lerp_rate: float = 12.0 if has_move_input else 15.0
+	applied_velocity = velocity.lerp(movement_velocity, delta * lerp_rate)
 	applied_velocity.y = -gravity
 
 	velocity = applied_velocity
@@ -78,9 +84,10 @@ func _physics_process(delta):
 
 	# Rotation
 
-	if aim_facing and view:
-		# 瞄准/开火时面向相机正前方
-		rotation.y = lerp_angle(rotation.y, view.rotation.y + PI, delta * 12)
+	var fp_face: bool = view != null and view.first_person and view.chase == null
+	if (aim_facing or fp_face) and view:
+		# 瞄准/开火/第一人称时面向相机正前方（镜头转向与角色精确同步）
+		rotation.y = lerp_angle(rotation.y, view.rotation.y + PI, delta * 14)
 	else:
 		if Vector2(velocity.z, velocity.x).length() > 0:
 			rotation_direction = Vector2(velocity.z, velocity.x).angle()
@@ -152,6 +159,13 @@ func handle_controls(delta):
 	# Movement
 
 	var input := Vector3.ZERO
+
+	if input_locked:
+		# 商店面板打开期间：停止移动、禁止跳跃，仅恢复耐力
+		movement_velocity = Vector3.ZERO
+		stamina = minf(max_stamina, stamina + stamina_regen * delta)
+		stamina_changed.emit(stamina, max_stamina)
+		return
 
 	input.x = Input.get_axis("move_left", "move_right")
 	input.z = Input.get_axis("move_forward", "move_back")
@@ -248,6 +262,9 @@ func take_damage(amount: float) -> void:
 	hp = maxf(0.0, hp - amount)
 	hurt_slow_t = HURT_SLOW_TIME
 	hp_changed.emit(hp, max_hp)
+	# 受击屏幕震动（镜头脚本提供）
+	if view and view.has_method("add_shake"):
+		view.add_shake(0.12 + clampf(amount / 100.0, 0.0, 1.0) * 0.12)
 	if hp <= 0.0:
 		die()
 
