@@ -256,7 +256,7 @@ func _draw_vignette(vp: Vector2) -> void:
 	var bt := Engine.time_scale < 0.9
 	# 低血量红边强度：连续渐入值 _low_v × 呼吸脉冲（0.72~1.0），受伤瞬间的红闪叠加
 	var pulse := 0.72 + 0.28 * sin(Time.get_ticks_msec() * 0.005)
-	var ra := clampf(_hurt * 0.45 + _low_v * (0.28 + 0.22 * pulse), 0.0, 0.75)
+	var ra := clampf(_hurt * 0.34 + _low_v * (0.28 + 0.22 * pulse), 0.0, 0.75)
 	_edge_fx(vp, Color(1.0, 0.08, 0.12), ra)
 	# 子弹时间
 	if bt:
