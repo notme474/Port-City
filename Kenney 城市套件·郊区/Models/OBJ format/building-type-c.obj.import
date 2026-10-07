@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://gdx4a6k5rxs8"
+path="res://.godot/imported/building-type-c.obj-5d04cda3572dd3c4007fa6511703dddc.mesh"
+
+[deps]
+
+files=["res://.godot/imported/building-type-c.obj-5d04cda3572dd3c4007fa6511703dddc.mesh"]
+
+source_file="res://Kenney 城市套件·郊区/Models/OBJ format/building-type-c.obj"
+dest_files=["res://.godot/imported/building-type-c.obj-5d04cda3572dd3c4007fa6511703dddc.mesh", "res://.godot/imported/building-type-c.obj-5d04cda3572dd3c4007fa6511703dddc.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

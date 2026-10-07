@@ -1,0 +1,17 @@
+图标来源：game-icons.net （GitHub: game-icons/icons）
+许可：CC BY 3.0 —— 发布游戏时需保留本文件（署名要求）
+作者与文件对照：
+  w_pistol.svg    john-colburn    pistol-gun
+  w_rifle.svg     sbed            rifle
+  w_shotgun.svg   sbed            shotgun
+  w_alien.svg     sbed            blaster
+  coin_icon.svg   Delapouite      coins
+  hp_icon.svg     badges (Delapouite & Lorc)  heart
+  stamina_icon.svg badges (Delapouite & Lorc) bolt
+  ammo_icon.svg   Delapouite      heavy-bullets
+  q_cat.svg       Lorc            paw-print
+  q_fish.svg      Delapouite      tropical-fish
+  q_dance.svg     Delapouite      boombox
+  q_alien.svg     Lorc            alien-stare
+  icon_kb.svg     Delapouite      keyboard
+  icon_pad.svg    Delapouite      gamepad

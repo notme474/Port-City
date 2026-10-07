@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://loou0nruujkr"
+path="res://.godot/imported/细节_挑檐_宽.obj-2d5a5bd03267b97e8e9c1ab11e665df6.mesh"
+
+[deps]
+
+files=["res://.godot/imported/细节_挑檐_宽.obj-2d5a5bd03267b97e8e9c1ab11e665df6.mesh"]
+
+source_file="res://Kenney 城市套件·商业区/Models/OBJ format/细节_挑檐_宽.obj"
+dest_files=["res://.godot/imported/细节_挑檐_宽.obj-2d5a5bd03267b97e8e9c1ab11e665df6.mesh", "res://.godot/imported/细节_挑檐_宽.obj-2d5a5bd03267b97e8e9c1ab11e665df6.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

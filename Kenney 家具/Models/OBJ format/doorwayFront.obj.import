@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://durbdeo07o8ti"
+path="res://.godot/imported/doorwayFront.obj-99b8dfdfd297abc682f156e91f2302cc.mesh"
+
+[deps]
+
+files=["res://.godot/imported/doorwayFront.obj-99b8dfdfd297abc682f156e91f2302cc.mesh"]
+
+source_file="res://Kenney 家具/Models/OBJ format/doorwayFront.obj"
+dest_files=["res://.godot/imported/doorwayFront.obj-99b8dfdfd297abc682f156e91f2302cc.mesh", "res://.godot/imported/doorwayFront.obj-99b8dfdfd297abc682f156e91f2302cc.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

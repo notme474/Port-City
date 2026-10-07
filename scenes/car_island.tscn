@@ -1,0 +1,360 @@
+[gd_scene load_steps=78 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicle_manager.gd" id="1_vmgr"]
+[ext_resource type="PackedScene" path="res://objects/vehicle.tscn" id="2_veh"]
+[ext_resource type="PackedScene" uid="uid://buk0t6u6d5l8p" path="res://GLB format/轿车.glb" id="c00"]
+[ext_resource type="PackedScene" uid="uid://5avjqreridyi" path="res://GLB format/轿车_运动.glb" id="c01"]
+[ext_resource type="PackedScene" uid="uid://ddmnl7qgarc7r" path="res://GLB format/掀背车_运动.glb" id="c02"]
+[ext_resource type="PackedScene" uid="uid://dmvr5qnk1o4v3" path="res://GLB format/赛车.glb" id="c03"]
+[ext_resource type="PackedScene" uid="uid://cakrwtplnn6a4" path="res://GLB format/赛车_未来.glb" id="c04"]
+[ext_resource type="PackedScene" uid="uid://ddepsdgw2gyus" path="res://GLB format/出租车.glb" id="c05"]
+[ext_resource type="PackedScene" uid="uid://dmij1cne0jn42" path="res://GLB format/警车.glb" id="c06"]
+[ext_resource type="PackedScene" uid="uid://byjj4jtxv4wij" path="res://GLB format/救护车.glb" id="c07"]
+[ext_resource type="PackedScene" uid="uid://bwx0hq72h6r70" path="res://GLB format/消防车.glb" id="c08"]
+[ext_resource type="PackedScene" uid="uid://clyy01tskggbo" path="res://GLB format/垃圾车.glb" id="c09"]
+[ext_resource type="PackedScene" uid="uid://bwe4lnf6q5xdo" path="res://GLB format/面包车.glb" id="c10"]
+[ext_resource type="PackedScene" uid="uid://cacngtl5fynym" path="res://GLB format/卡车.glb" id="c11"]
+[ext_resource type="PackedScene" uid="uid://c5xsoeutithpd" path="res://GLB format/卡车_平板.glb" id="c12"]
+[ext_resource type="PackedScene" uid="uid://cqwgify6vg5rb" path="res://GLB format/货车.glb" id="c13"]
+[ext_resource type="PackedScene" uid="uid://ccu7wag1u14jp" path="res://GLB format/货车_平板.glb" id="c14"]
+[ext_resource type="PackedScene" uid="uid://lanrrvu42bbj" path="res://GLB format/SUV.glb" id="c15"]
+[ext_resource type="PackedScene" uid="uid://cu0fqt4rynt8i" path="res://GLB format/SUV_豪华.glb" id="c16"]
+[ext_resource type="PackedScene" uid="uid://cllgx81vow2l8" path="res://GLB format/拖拉机.glb" id="c17"]
+[ext_resource type="PackedScene" uid="uid://beoidu2fadsnx" path="res://GLB format/拖拉机_铲斗.glb" id="c18"]
+[ext_resource type="PackedScene" uid="uid://b8257joffqe5l" path="res://GLB format/拖拉机_警用.glb" id="c19"]
+[ext_resource type="PackedScene" uid="uid://b56r3e8b5ctw1" path="res://GLB format/卡丁车_oobi.glb" id="c20"]
+[ext_resource type="PackedScene" uid="uid://b2tf5on4pi0o8" path="res://GLB format/卡丁车_oodi.glb" id="c21"]
+[ext_resource type="PackedScene" uid="uid://cknodjgoj0kwn" path="res://GLB format/卡丁车_ooli.glb" id="c22"]
+[ext_resource type="PackedScene" uid="uid://b3xn8wslcevid" path="res://GLB format/卡丁车_oopi.glb" id="c23"]
+[ext_resource type="PackedScene" uid="uid://cw3n4kck4y8ae" path="res://GLB format/卡丁车_oozi.glb" id="c24"]
+[ext_resource type="PackedScene" uid="uid://ph47hxx3666q" path="res://GLB format/棕榈_挺直.glb" id="d_palm1"]
+[ext_resource type="PackedScene" uid="uid://bhtcnko2ro8ag" path="res://GLB format/棕榈_弯曲.glb" id="d_palm2"]
+[ext_resource type="PackedScene" uid="uid://b6285krnfiffy" path="res://GLB format/岩石_a.glb" id="d_rock"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_grass"]
+albedo_color = Color(0.35, 0.55, 0.25, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_sand"]
+albedo_color = Color(0.84, 0.76, 0.53, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_deck"]
+albedo_color = Color(0.44, 0.45, 0.47, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rail"]
+albedo_color = Color(0.72, 0.72, 0.74, 1)
+
+[sub_resource type="BoxMesh" id="M_grass"]
+material = SubResource("Mat_grass")
+size = Vector3(44, 2, 42)
+
+[sub_resource type="BoxShape3D" id="S_grass"]
+size = Vector3(44, 2, 42)
+
+[sub_resource type="BoxMesh" id="M_sand"]
+material = SubResource("Mat_sand")
+size = Vector3(46, 6, 44)
+
+[sub_resource type="BoxShape3D" id="S_sand"]
+size = Vector3(46, 6, 44)
+
+[sub_resource type="BoxMesh" id="M_ramp"]
+material = SubResource("Mat_deck")
+size = Vector3(4.01278, 1, 14)
+
+[sub_resource type="BoxShape3D" id="S_ramp"]
+size = Vector3(4.01278, 1, 14)
+
+[sub_resource type="BoxMesh" id="M_deck"]
+material = SubResource("Mat_deck")
+size = Vector3(25.0362, 1, 14)
+
+[sub_resource type="BoxShape3D" id="S_deck"]
+size = Vector3(25.0362, 1, 14)
+
+[sub_resource type="BoxMesh" id="M_rail"]
+material = SubResource("Mat_rail")
+size = Vector3(25.0362, 0.5, 0.5)
+
+[sub_resource type="BoxShape3D" id="S_rail"]
+size = Vector3(25.0362, 0.5, 0.5)
+
+
+[node name="CarIsland" type="Node3D"]
+
+script = ExtResource("1_vmgr")
+
+vehicles_root = NodePath("车辆")
+
+[node name="岛体" type="Node3D" parent="."]
+
+transform = Transform3D(0.998752, 0, 0.049938, 0, 1, 0, -0.049938, 0, 0.998752, 319, 19.161100, 55)
+
+[node name="草地台面" type="StaticBody3D" parent="岛体"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 51.036200, -1, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="岛体/草地台面"]
+
+mesh = SubResource("M_grass")
+
+[node name="Col" type="CollisionShape3D" parent="岛体/草地台面"]
+
+shape = SubResource("S_grass")
+
+[node name="沙地底台" type="StaticBody3D" parent="岛体"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 51.036200, -4, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="岛体/沙地底台"]
+
+mesh = SubResource("M_sand")
+
+[node name="Col" type="CollisionShape3D" parent="岛体/沙地底台"]
+
+shape = SubResource("S_sand")
+
+[node name="连接桥" type="Node3D" parent="."]
+
+transform = Transform3D(0.998752, 0, 0.049938, 0, 1, 0, -0.049938, 0, 0.998752, 319, 19.161100, 55)
+
+[node name="西斜坡" type="StaticBody3D" parent="连接桥"]
+
+transform = Transform3D(0.996815, 0.079745, 0, -0.079745, 0.996815, 0, 0, 0, 1, 2, -0.160000, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="连接桥/西斜坡"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.500000, 0)
+
+mesh = SubResource("M_ramp")
+
+[node name="Col" type="CollisionShape3D" parent="连接桥/西斜坡"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.500000, 0)
+
+shape = SubResource("S_ramp")
+
+[node name="桥面" type="StaticBody3D" parent="连接桥"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.518100, -0.500000, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="连接桥/桥面"]
+
+mesh = SubResource("M_deck")
+
+[node name="Col" type="CollisionShape3D" parent="连接桥/桥面"]
+
+shape = SubResource("S_deck")
+
+[node name="护栏1" type="StaticBody3D" parent="连接桥"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.518100, 0.250000, -6.600000)
+
+[node name="Mesh" type="MeshInstance3D" parent="连接桥/护栏1"]
+
+mesh = SubResource("M_rail")
+
+[node name="Col" type="CollisionShape3D" parent="连接桥/护栏1"]
+
+shape = SubResource("S_rail")
+
+[node name="护栏2" type="StaticBody3D" parent="连接桥"]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.518100, 0.250000, 6.600000)
+
+[node name="Mesh" type="MeshInstance3D" parent="连接桥/护栏2"]
+
+mesh = SubResource("M_rail")
+
+[node name="Col" type="CollisionShape3D" parent="连接桥/护栏2"]
+
+shape = SubResource("S_rail")
+
+[node name="车辆" type="Node3D" parent="."]
+
+[node name="轿车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 358.151072, 19.221100, 37.022448)
+
+model_scene = ExtResource("c00")
+
+[node name="轿车_运动" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 364.642960, 19.221100, 36.697851)
+
+model_scene = ExtResource("c01")
+
+[node name="掀背车_运动" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 371.134848, 19.221100, 36.373254)
+
+model_scene = ExtResource("c02")
+
+[node name="赛车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 377.626736, 19.221100, 36.048657)
+
+model_scene = ExtResource("c03")
+
+[node name="赛车_未来" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 384.118624, 19.221100, 35.724060)
+
+model_scene = ExtResource("c04")
+
+[node name="出租车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 358.550576, 19.221100, 45.012464)
+
+model_scene = ExtResource("c05")
+
+[node name="警车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 365.042464, 19.221100, 44.687867)
+
+model_scene = ExtResource("c06")
+
+[node name="救护车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 371.534352, 19.221100, 44.363270)
+
+model_scene = ExtResource("c07")
+
+[node name="消防车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 378.026240, 19.221100, 44.038673)
+
+model_scene = ExtResource("c08")
+
+[node name="垃圾车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 384.518128, 19.221100, 43.714076)
+
+model_scene = ExtResource("c09")
+
+[node name="面包车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 358.950080, 19.221100, 53.002480)
+
+model_scene = ExtResource("c10")
+
+[node name="卡车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 365.441968, 19.221100, 52.677883)
+
+model_scene = ExtResource("c11")
+
+[node name="卡车_平板" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 371.933856, 19.221100, 52.353286)
+
+model_scene = ExtResource("c12")
+
+[node name="货车" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 378.425744, 19.221100, 52.028689)
+
+model_scene = ExtResource("c13")
+
+[node name="货车_平板" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 384.917632, 19.221100, 51.704092)
+
+model_scene = ExtResource("c14")
+
+[node name="SUV" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 359.349584, 19.221100, 60.992496)
+
+model_scene = ExtResource("c15")
+
+[node name="SUV_豪华" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 365.841472, 19.221100, 60.667899)
+
+model_scene = ExtResource("c16")
+
+[node name="拖拉机" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 372.333360, 19.221100, 60.343302)
+
+model_scene = ExtResource("c17")
+
+[node name="拖拉机_铲斗" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 378.825248, 19.221100, 60.018705)
+
+model_scene = ExtResource("c18")
+
+[node name="拖拉机_警用" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 385.317136, 19.221100, 59.694108)
+
+model_scene = ExtResource("c19")
+
+[node name="卡丁车_oobi" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 359.749088, 19.221100, 68.982512)
+
+model_scene = ExtResource("c20")
+
+[node name="卡丁车_oodi" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 366.240976, 19.221100, 68.657915)
+
+model_scene = ExtResource("c21")
+
+[node name="卡丁车_ooli" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 372.732864, 19.221100, 68.333318)
+
+model_scene = ExtResource("c22")
+
+[node name="卡丁车_oopi" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 379.224752, 19.221100, 68.008721)
+
+model_scene = ExtResource("c23")
+
+[node name="卡丁车_oozi" parent="车辆" instance=ExtResource("2_veh")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 385.716640, 19.221100, 67.684124)
+
+model_scene = ExtResource("c24")
+
+[node name="装饰" type="Node3D" parent="."]
+
+[node name="棕榈1" parent="装饰" instance=ExtResource("d_palm1")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 352.857703, 18.161100, 38.670396)
+
+[node name="棕榈2" parent="装饰" instance=ExtResource("d_palm2")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 388.812787, 18.161100, 40.468147)
+
+[node name="棕榈3" parent="装饰" instance=ExtResource("d_palm1")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 351.059952, 18.161100, 74.625481)
+
+[node name="棕榈4" parent="装饰" instance=ExtResource("d_palm2")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 387.015036, 18.161100, 76.423231)
+
+[node name="棕榈5" parent="装饰" instance=ExtResource("d_palm1")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 389.412040, 18.161100, 58.520596)
+
+[node name="棕榈6" parent="装饰" instance=ExtResource("d_palm2")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 369.986309, 18.161100, 76.573046)
+
+[node name="岩石1" parent="装饰" instance=ExtResource("d_rock")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 359.923875, 18.161100, 37.521830)
+
+[node name="岩石2" parent="装饰" instance=ExtResource("d_rock")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 379.948864, 18.161100, 77.571797)
+
+[node name="岩石3" parent="装饰" instance=ExtResource("d_rock")]
+
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 389.312164, 18.161100, 50.505608)

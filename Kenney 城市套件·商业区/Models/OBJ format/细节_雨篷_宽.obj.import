@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://c5envj55sd6x"
+path="res://.godot/imported/细节_雨篷_宽.obj-77b712f901e6deafc08baeb6632b945b.mesh"
+
+[deps]
+
+files=["res://.godot/imported/细节_雨篷_宽.obj-77b712f901e6deafc08baeb6632b945b.mesh"]
+
+source_file="res://Kenney 城市套件·商业区/Models/OBJ format/细节_雨篷_宽.obj"
+dest_files=["res://.godot/imported/细节_雨篷_宽.obj-77b712f901e6deafc08baeb6632b945b.mesh", "res://.godot/imported/细节_雨篷_宽.obj-77b712f901e6deafc08baeb6632b945b.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false
