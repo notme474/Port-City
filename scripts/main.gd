@@ -133,6 +133,11 @@ func _load_systems() -> void:
 	stunts.name = "StuntRamps"
 	stunts.set_script(load("res://scripts/stunt_ramps.gd"))
 	add_child(stunts)
+	# 手雷（G 键投掷，范围爆炸）
+	var gren := Node3D.new()
+	gren.name = "GrenadeSystem"
+	gren.set_script(load("res://scripts/grenade_system.gd"))
+	add_child(gren)
 	# 城市行人（layer 4，NPC 互不碰撞，沿道路散步，接入通缉撞人判定）
 	var npcs := Node3D.new()
 	npcs.name = "CityNpcs"
