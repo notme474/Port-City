@@ -207,7 +207,8 @@ func _physics_process(delta):
 	var fov_target: float
 	if chase != null:
 		zoom_target = 12.5
-		fov_target = FOV_CHASE
+		var boosting: bool = bool(chase.get("nitro_active"))
+		fov_target = FOV_CHASE * (1.12 if boosting else 1.0)
 	elif first_person:
 		zoom_target = 0.0
 		fov_target = FOV_FIRST_ADS if _fp_aiming else FOV_FIRST

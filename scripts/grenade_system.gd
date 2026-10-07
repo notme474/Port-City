@@ -137,6 +137,7 @@ func _explode(pos: Vector3) -> void:
 	params.collision_mask = 7   # 1 世界 / 2 敌人命中区 / 4 行人
 	var hits: Array = sp.intersect_shape(params)
 	var npc_killed := 0
+	var damaged: Array = []   # 同一实体多个命中区（头/身）只结算一次
 	for h in hits:
 		var node: Object = h.collider if h is Dictionary else null
 		if node == null:
@@ -158,7 +159,9 @@ func _explode(pos: Vector3) -> void:
 		var hops := 0
 		while cur != null and hops < 4:
 			if cur.has_method("bullet_hit"):
-				cur.bullet_hit(dmg)
+				if not damaged.has(cur):
+					damaged.append(cur)
+					cur.bullet_hit(dmg)
 				break
 			cur = cur.get_parent()
 			hops += 1

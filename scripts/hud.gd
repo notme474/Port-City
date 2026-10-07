@@ -248,6 +248,7 @@ func _draw_fx() -> void:
 	_draw_banner(vp)
 	_draw_combo(c)
 	_draw_hint(vp)
+	_draw_nitro(vp)
 
 ## 全屏边缘暗角 + 受伤红屏 + 低血量呼吸红边 + 子弹时间蓝调/扫描线
 func _draw_vignette(vp: Vector2) -> void:
@@ -321,6 +322,28 @@ func _bar(r: Rect2, frac: float, color: Color, txt: String, a := 1.0) -> void:
 	if txt != "":
 		_fx.draw_string(ThemeDB.fallback_font, r.position + Vector2(10, r.size.y * 0.72),
 			txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1, a))
+
+## 驾驶中右下氮气槽（Shift 激活时变粉高亮）
+func _draw_nitro(vp: Vector2) -> void:
+	if player == null:
+		return
+	var view2: Node = player.get_parent().get_node_or_null("View")
+	if view2 == null:
+		return
+	var car: Object = view2.get("chase")
+	if car == null:
+		return
+	var amt: float = clampf(float(car.get("_nitro")), 0.0, 1.0)
+	var act: bool = bool(car.get("nitro_active"))
+	var col := MAGENTA if act else CYAN
+	var w := 240.0
+	var r := Rect2(vp.x - w - 28.0, vp.y - 64.0, w, 14.0)
+	_round(r, Color(0.03, 0.04, 0.07, 0.72), 6.0, Color(col, 0.9 if act else 0.25), 2.0 if act else 1.0)
+	if amt > 0.01:
+		var fr := Rect2(r.position + Vector2(2, 2), Vector2((w - 4.0) * amt, r.size.y - 4.0))
+		_round(fr, Color(col.r, col.g, col.b, 0.95), 4.0, Color(col, 0.0), 0.0)
+	_fx.draw_string(ThemeDB.fallback_font, r.position + Vector2(8, -4),
+		"N2O", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(col.r, col.g, col.b, 0.9))
 
 func _round(r: Rect2, bg: Color, rad: float, border: Color, bw: float) -> void:
 	var sb := StyleBoxFlat.new()

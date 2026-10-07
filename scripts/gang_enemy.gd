@@ -114,6 +114,18 @@ func _build() -> void:
 	cs.position.y = 1.2
 	ha.add_child(cs)
 	add_child(ha)
+	# 头部命中区（节点名含 head，武器系统部位倍率自动 1.6x）
+	var hh := Area3D.new()
+	hh.name = "head_hit"
+	hh.collision_layer = 2
+	hh.collision_mask = 0
+	var hcs := CollisionShape3D.new()
+	var hbox := BoxShape3D.new()
+	hbox.size = Vector3(0.72, 0.72, 0.72)
+	hcs.shape = hbox
+	hcs.position.y = 2.25
+	hh.add_child(hcs)
+	add_child(hh)
 
 ## 武器命中回调；返回 true 表示本次击杀（武器据此报 kill_confirmed）
 func bullet_hit(amount: float) -> bool:

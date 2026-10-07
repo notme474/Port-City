@@ -29,6 +29,14 @@ var driver: CharacterBody3D = null             ## 当前驾驶员（为空即无
 var view_target: Node3D = null                 ## 摄像机跟随点
 
 var _speed := 0.0
+
+# 氮气：驾驶中按 Shift（与步行奔跑同键，上车后步行输入已停用）
+const NITRO_MULT := 1.45        # 极速倍率
+const NITRO_ACC := 1.8          # 加速倍率
+const NITRO_DRAIN := 0.45       # 每秒消耗（满槽约 2.2 秒）
+const NITRO_REGEN := 0.12       # 每秒回复（约 8 秒回满）
+var _nitro := 1.0               # 氮气槽 0~1
+var nitro_active := false
 var _roll := 0.0
 var _steer := 0.0
 var _front_wheels: Array[Node3D] = []
@@ -178,9 +186,19 @@ func _physics_process(delta: float) -> void:
 		throttle = clampf(kb + _trigger_axis(JOY_AXIS_TRIGGER_RIGHT) - _trigger_axis(JOY_AXIS_TRIGGER_LEFT), -1.0, 1.0)
 		steer_input = Input.get_axis("move_right", "move_left")
 		braking = Input.is_action_pressed("jump")
+		nitro_active = Input.is_physical_key_pressed(KEY_SHIFT) and throttle > 0.1 and is_on_floor() and _nitro > 0.02
+	else:
+		nitro_active = false
 
+	if nitro_active:
+		_nitro = maxf(0.0, _nitro - NITRO_DRAIN * delta)
+	else:
+		_nitro = minf(1.0, _nitro + NITRO_REGEN * delta)
+
+	var top_speed := max_speed * (NITRO_MULT if nitro_active else 1.0)
 	if throttle > 0.01:
-		_speed = move_toward(_speed, max_speed, acceleration * delta)
+		var acc := acceleration * (NITRO_ACC if nitro_active else 1.0)
+		_speed = move_toward(_speed, top_speed, acc * delta)
 	elif throttle < -0.01:
 		_speed = move_toward(_speed, -reverse_speed, acceleration * delta)
 	else:

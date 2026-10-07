@@ -30,6 +30,13 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("stats_panel"):
 		_toggle()
 	if _open:
+		# 死亡演出期间强制关面板，避免 input_locked 残留影响复活
+		if player and "hp" in player and float(player.hp) <= 0.0:
+			_open = false
+			_root.visible = false
+			if "input_locked" in player:
+				player.input_locked = false
+			return
 		_rt += delta
 		if _rt >= 0.25:
 			_rt = 0.0

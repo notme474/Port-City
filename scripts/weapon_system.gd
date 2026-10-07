@@ -491,7 +491,8 @@ func _apply_hit(hit: Dictionary, w: WeaponData, dist: float, dir: Vector3) -> vo
 		# 纯环境命中：只留弹孔
 		_spawn_hole(end, normal)
 		return
-	var mult: float = _falloff(w, dist) * _part_multiplier(hit.collider)
+	var head: bool = _is_head(hit.collider)
+	var mult: float = _falloff(w, dist) * (1.6 if head else _part_multiplier(hit.collider))
 	var dmg: float = w.damage * mult
 	var died := false
 	var tname := str(target.name)
@@ -504,6 +505,10 @@ func _apply_hit(hit: Dictionary, w: WeaponData, dist: float, dir: Vector3) -> vo
 		tname = str(target.get("display_name")) if target.get("display_name") != null else tname
 	_spawn_damage_label(end, dmg, w.tracer_color, died, mult)
 	hit_confirmed.emit(dmg)
+	if head:
+		var ss := get_parent().get_node_or_null("StatsSystem")
+		if ss and ss.has_method("add_stat"):
+			ss.add_stat("headshots", 1.0)
 	if died:
 		KillFx.explode(get_tree(), end + Vector3(0, 0.5, 0), w.tracer_color)
 		KillFx.hitstop(get_tree())
@@ -526,6 +531,17 @@ func _part_multiplier(collider: Object) -> float:
 		n = n.get_parent()
 		depth += 1
 	return 1.0
+
+## 是否命中头部命中区（沿父链 3 跳内节点名含 head）
+func _is_head(collider: Object) -> bool:
+	var n := collider as Node
+	var depth := 0
+	while n != null and depth < 3:
+		if "head" in n.name.to_lower():
+			return true
+		n = n.get_parent()
+		depth += 1
+	return false
 
 func _shape_target(center: Vector3) -> Node:
 	var params := PhysicsShapeQueryParameters3D.new()
