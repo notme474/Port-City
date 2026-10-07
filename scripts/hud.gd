@@ -249,6 +249,7 @@ func _draw_fx() -> void:
 	_draw_combo(c)
 	_draw_hint(vp)
 	_draw_nitro(vp)
+	_draw_grenades(vp)
 
 ## 全屏边缘暗角 + 受伤红屏 + 低血量呼吸红边 + 子弹时间蓝调/扫描线
 func _draw_vignette(vp: Vector2) -> void:
@@ -344,6 +345,19 @@ func _draw_nitro(vp: Vector2) -> void:
 		_round(fr, Color(col.r, col.g, col.b, 0.95), 4.0, Color(col, 0.0), 0.0)
 	_fx.draw_string(ThemeDB.fallback_font, r.position + Vector2(8, -4),
 		"N2O", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(col.r, col.g, col.b, 0.9))
+
+## 右下角手雷剩余（G 投掷，无存货时暗红）
+func _draw_grenades(vp: Vector2) -> void:
+	if player == null:
+		return
+	var gs: Node = player.get_parent().get_node_or_null("GrenadeSystem")
+	if gs == null:
+		return
+	var n: int = int(gs.get("grenades"))
+	var col := Color(1.0, 0.55, 0.2) if n > 0 else Color(0.5, 0.12, 0.12)
+	var txt := "手雷 [G]  x%d" % n
+	_fx.draw_string(ThemeDB.fallback_font, Vector2(vp.x - 160.0, vp.y - 74.0),
+		txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, col)
 
 func _round(r: Rect2, bg: Color, rad: float, border: Color, bw: float) -> void:
 	var sb := StyleBoxFlat.new()
