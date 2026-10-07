@@ -73,6 +73,14 @@ func _collect() -> Dictionary:
 	if dn:
 		d["day_phase"] = dn.day_phase
 		d["day_idx"] = dn.day_idx
+	# 统计/成就
+	var st := get_parent().get_node_or_null("StatsSystem")
+	if st:
+		d["stats_data"] = st.get_save()
+	# 隐藏包裹
+	var col := get_parent().get_node_or_null("Collectibles")
+	if col:
+		d["packages_data"] = col.get_save()
 	return d
 
 func save_game() -> void:
@@ -151,6 +159,14 @@ func _load() -> void:
 		dn.day_idx = int(d.get("day_idx", 1))
 		# 立即应用一次避免闪白
 		dn.call("_apply", true)
+	# 统计/成就
+	var st2 := get_parent().get_node_or_null("StatsSystem")
+	if st2 and d.has("stats_data"):
+		st2.set_save(d["stats_data"])
+	# 隐藏包裹
+	var col2 := get_parent().get_node_or_null("Collectibles")
+	if col2 and d.has("packages_data"):
+		col2.set_save(d["packages_data"])
 	emit_signal("save_loaded")
 
 func _notification(what: int) -> void:

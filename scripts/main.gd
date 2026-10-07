@@ -103,6 +103,16 @@ func _load_systems() -> void:
 	district.name = "NewDistrict"
 	district.set_script(load("res://scripts/new_district.gd"))
 	add_child(district)
+	# 统计与成就（须早于依赖它的收集/竞速/据点系统）
+	var stats := Node.new()
+	stats.name = "StatsSystem"
+	stats.set_script(load("res://scripts/stats_system.gd"))
+	add_child(stats)
+	# 20 个隐藏包裹（探索收集）
+	var cols := Node3D.new()
+	cols.name = "Collectibles"
+	cols.set_script(load("res://scripts/collectibles.gd"))
+	add_child(cols)
 	# 城市行人（layer 4，NPC 互不碰撞，沿道路散步，接入通缉撞人判定）
 	var npcs := Node3D.new()
 	npcs.name = "CityNpcs"
