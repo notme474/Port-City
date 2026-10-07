@@ -80,6 +80,65 @@ func _build_dock() -> void:
 	# 码头平台碰撞（大平面，可站可停船，顶面局部 y=1.0）
 	_add_box_col(dock_root, Vector3(0, -0.5, 0), Vector3(60, 3, 40))
 
+	# 帮派据点"码头仓库帮"海上平台（据点中心 720,380 原本是无碰撞海面，会坠海死局）
+	_build_gang_platform()
+
+# ---------- 帮派据点海上木平台：50×50 + 栈桥接大码头 + 货箱掩体 ----------
+func _build_gang_platform() -> void:
+	var top_y := -0.2   # 与大码头甲板顶面齐平
+	var cx := 720.0
+	var cz := 380.0
+	# 主甲板：视觉 + 碰撞
+	var pm := MeshInstance3D.new()
+	var pbox := BoxMesh.new()
+	pbox.size = Vector3(50, 0.8, 50)
+	pm.mesh = pbox
+	pm.material_override = _mat(Color(0.42, 0.28, 0.15), 0.9)
+	pm.position = Vector3(cx, top_y - 0.4, cz)
+	add_child(pm)
+	_add_box_col(self, Vector3(cx, top_y - 1.0, cz), Vector3(50, 2, 50))
+	# 栈桥：沿 x 方向接入大码头西北角（大码头碰撞 x[730,790] z[400,440]）
+	var br := MeshInstance3D.new()
+	var bmesh := BoxMesh.new()
+	bmesh.size = Vector3(21, 0.8, 8)
+	br.mesh = bmesh
+	br.material_override = _mat(Color(0.42, 0.28, 0.15), 0.9)
+	br.position = Vector3(737.5, top_y - 0.4, 400.0)
+	add_child(br)
+	_add_box_col(self, Vector3(737.5, top_y - 1.0, 400.0), Vector3(21, 2, 8))
+	# 桥桩（装饰）
+	for px in [730.0, 737.5, 745.0]:
+		var pile := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.4
+		cyl.bottom_radius = 0.5
+		cyl.height = 9.0
+		pile.mesh = cyl
+		pile.material_override = _mat(Color(0.3, 0.2, 0.12), 0.95)
+		pile.position = Vector3(px, -4.7, 403.4)
+		add_child(pile)
+	# 货箱掩体 ×4（距中心 20m 左右，避开敌人 r=7/10/13 生成环）
+	var boxes: Array = [
+		[Vector2(705, 367), Color(0.72, 0.24, 0.2)],
+		[Vector2(736, 367), Color(0.25, 0.45, 0.7)],
+		[Vector2(704, 394), Color(0.25, 0.45, 0.7)],
+		[Vector2(737, 394), Color(0.72, 0.24, 0.2)],
+	]
+	for b in boxes:
+		var ba: Array = b
+		var bp: Vector2 = ba[0]
+		var bc: Color = ba[1]
+		var box_mi := MeshInstance3D.new()
+		var bm2 := BoxMesh.new()
+		bm2.size = Vector3(6, 3, 6)
+		box_mi.mesh = bm2
+		var bmat := _mat(bc, 0.55)
+		bmat.metallic = 0.25
+		box_mi.material_override = bmat
+		box_mi.position = Vector3(bp.x, top_y + 1.5, bp.y)
+		add_child(box_mi)
+		_add_box_col(self, Vector3(bp.x, top_y + 1.5, bp.y), Vector3(6, 3, 6))
+
 func _add_box_col(parent: Node, pos: Vector3, size: Vector3) -> void:
 	var body := StaticBody3D.new()
 	body.position = pos
