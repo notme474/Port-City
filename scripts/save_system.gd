@@ -85,6 +85,10 @@ func _collect() -> Dictionary:
 	var race := get_parent().get_node_or_null("RaceSystem")
 	if race:
 		d["race_data"] = race.get_save()
+	# 帮派据点清剿状态
+	var camps := get_parent().get_node_or_null("GangCamps")
+	if camps:
+		d["camps_data"] = camps.get_save()
 	return d
 
 func save_game() -> void:
@@ -175,6 +179,10 @@ func _load() -> void:
 	var race2 := get_parent().get_node_or_null("RaceSystem")
 	if race2 and d.has("race_data"):
 		race2.set_save(d["race_data"])
+	# 帮派据点清剿状态
+	var camps2 := get_parent().get_node_or_null("GangCamps")
+	if camps2 and d.has("camps_data"):
+		camps2.set_save(d["camps_data"])
 	emit_signal("save_loaded")
 
 func _notification(what: int) -> void:
