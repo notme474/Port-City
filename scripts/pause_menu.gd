@@ -32,7 +32,6 @@ var _blink_at := 2.2
 var _blink_next_end := 0.0
 
 var _panel: Control
-var _stats: Control
 var _font: Font
 
 func _ready() -> void:
@@ -41,22 +40,17 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	_load_cfg()
 	_build_ui()
-	_build_stats()
 	set_process(true)
 
-func _build_stats() -> void:
-	_stats = Control.new()
-	# 必须全屏锚定：默认 size=0 会让 stats_panel 内部 PRESET_CENTER 锚到屏幕左上角
-	_stats.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_stats.set_script(load("res://scripts/stats_panel.gd"))
-	add_child(_stats)
-
+## 战绩面板开关：代理到 main 的 StatsPanel（CanvasLayer，B 键同款入口）。
+## 旧版在此 new Control 挂 CanvasLayer 脚本，启动必报
+## "Script inherits from native type 'CanvasLayer'"，已废弃。
 func _toggle_stats() -> void:
-	if _stats:
-		if _stats.visible:
-			_stats.hide_stats()
-		else:
-			_stats.show_stats()
+	var sp: Node = get_parent().get_node_or_null("StatsPanel") if get_parent() else null
+	if sp == null:
+		sp = get_tree().current_scene.get_node_or_null("StatsPanel")
+	if sp and sp.has_method("toggle_panel"):
+		sp.call("toggle_panel")
 
 # ---------- 对外接口（view.gd 读取） ----------
 func is_kbm() -> bool:

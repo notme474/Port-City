@@ -128,6 +128,18 @@ func _toggle() -> void:
 		_refresh_stats()
 		_refresh_achievements()
 
+## 供暂停菜单调用的公开接口（B 键之外的开面板入口）
+func toggle_panel() -> void:
+	_toggle()
+
+func show_stats() -> void:
+	if not _open:
+		_toggle()
+
+func hide_stats() -> void:
+	if _open:
+		_toggle()
+
 func _add_stat_row(text: String) -> void:
 	var l := Label.new()
 	l.text = text
