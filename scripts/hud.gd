@@ -50,8 +50,14 @@ func _icon(nm: String) -> Texture2D:
 	return _icons[nm]
 
 func _ready() -> void:
+	add_to_group("hud")
 	call_deferred("_bind_player")
 	_build()
+
+## 公开横幅接口（区域发现/成就等系统调用）
+func show_banner(title: String, sub := "") -> void:
+	var txt := title if sub == "" else "%s   %s" % [title, sub]
+	_show_banner(txt, MAGENTA, 3.0)
 
 # ---------- 搭建 ----------
 func _build() -> void:

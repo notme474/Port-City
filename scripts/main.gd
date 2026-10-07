@@ -98,6 +98,11 @@ func _load_systems() -> void:
 	props.name = "CityProps"
 	props.set_script(load("res://scripts/city_props.gd"))
 	add_child(props)
+	# 东岸新区（Kenney CC0 建筑套件程序化拼出的完整城区：摩天楼/商业/郊区/道路/街灯）
+	var district := Node3D.new()
+	district.name = "NewDistrict"
+	district.set_script(load("res://scripts/new_district.gd"))
+	add_child(district)
 	# 城市行人（layer 4，NPC 互不碰撞，沿道路散步，接入通缉撞人判定）
 	var npcs := Node3D.new()
 	npcs.name = "CityNpcs"
