@@ -15,6 +15,7 @@ const ITEMS := [
 	{"key": "alien",     "name": "外星涂装",   "price": 350,  "desc": "毒绿霓虹皮肤，解锁当前枪涂装", "color": Color(0.5, 1, 0.45)},
 	{"key": "hp",        "name": "海姆立克装甲","price": 300,  "desc": "血上限 +50，可叠加 3 次", "color": Color(1, 0.25, 0.3)},
 	{"key": "ammo",      "name": "备弹补给",   "price": 80,   "desc": "当前武器备弹 +30", "color": Color(0.4, 1, 0.5)},
+	{"key": "medkit",    "name": "医疗包",     "price": 120,  "desc": "立即回复 60 点生命，可重复购买", "color": Color(0.35, 0.95, 0.55)},
 ]
 
 var player: Node3D
@@ -364,6 +365,10 @@ func _refresh() -> void:
 		elif key == "ammo":
 			btn.text = "+%d 备弹 · %d" % [30, int(it.price)]
 			btn.disabled = false
+		elif key == "medkit":
+			var full := player != null and float(player.get("hp")) >= float(player.get("max_hp"))
+			btn.text = "回复 60 生命 · %d" % int(it.price)
+			btn.disabled = full
 		else:
 			if bought:
 				btn.text = "已解锁"
@@ -429,9 +434,16 @@ func _execute_buy(key: String) -> void:
 		_msg("金币不够！还差 %d" % (int(it.price) - coins))
 		_refresh()
 		return
+	if key == "medkit" and float(player.get("hp")) >= float(player.get("max_hp")):
+		_msg("生命已满，无需医疗包")
+		_refresh()
+		return
 
 	player.set("coins", coins - int(it.price))
 	player.coin_collected.emit(player.coins)
+	var stats := get_parent().get_node_or_null("StatsSystem")
+	if stats and stats.has_method("add_stat"):
+		stats.add_stat("coins_spent", float(it.price))
 
 	match key:
 		"rifle", "shotgun":
@@ -458,4 +470,9 @@ func _execute_buy(key: String) -> void:
 				ws.reserves[ws.current] = min(ws.reserves[ws.current] + 30, 999)
 				ws.ammo_changed.emit(ws.mags[ws.current], ws.reserves[ws.current])
 			_msg("备弹 +30！")
+		"medkit":
+			player.hp = minf(float(player.max_hp), float(player.hp) + 60.0)
+			if player.has_signal("hp_changed"):
+				player.hp_changed.emit(player.hp, player.max_hp)
+			_msg("生命回复 60！")
 	_refresh()

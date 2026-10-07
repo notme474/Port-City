@@ -144,6 +144,7 @@ func _refresh_stats() -> void:
 	for c in _stats_box.get_children():
 		c.queue_free()
 	_add_stat_row("金币：%d" % coins)
+	_add_stat_row("累计消费：%d" % int(st.get("coins_spent", 0)))
 	_add_stat_row("击杀：%d" % int(st.get("kills", 0)))
 	_add_stat_row("命中率：%.0f%%（%d/%d 发）" % [acc, hitsv, shots])
 	_add_stat_row("爆头：%d" % int(st.get("headshots", 0)))

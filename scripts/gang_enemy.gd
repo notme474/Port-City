@@ -188,6 +188,7 @@ func _melee_behavior(pp: Vector3, d: float, delta: float) -> void:
 		_cd = ATTACK_CD
 		if player.has_method("take_damage"):
 			player.take_damage(DMG)
+			_notify_hud()
 
 func _ranged_behavior(pp: Vector3, d: float, delta: float) -> void:
 	# 风筝：太远逼近，太近后撤，区间内站定瞄准
@@ -244,6 +245,27 @@ func _shoot(pp: Vector3) -> void:
 	var hit_chance := 0.6 if moving else 0.9
 	if randf() < hit_chance and player.has_method("take_damage"):
 		player.take_damage(SHOOT_DMG)
+		_notify_hud()
+
+## 通知 HUD 在屏幕边缘显示指向本敌人的受击箭头
+func _notify_hud() -> void:
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud == null or not hud.has_method("show_damage_dir"):
+		return
+	var cam_yaw := 0.0
+	var holder := get_parent()
+	if holder:
+		var view: Node = holder.get_node_or_null("../View")
+		if view:
+			cam_yaw = float((view.get("camera_rotation") as Vector3).y)
+	var d: Vector3 = global_position - player.global_position
+	d.y = 0.0
+	if d.length() < 0.1:
+		return
+	d = d.normalized()
+	var fwd := Vector3(sin(cam_yaw), 0.0, cos(cam_yaw))
+	var right := Vector3(cos(cam_yaw), 0.0, -sin(cam_yaw))
+	hud.show_damage_dir(Vector2(d.dot(right), d.dot(fwd)))
 
 func _speed() -> float:
 	if player is CharacterBody3D:

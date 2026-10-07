@@ -43,6 +43,7 @@ var _reload_lbl: Label
 var _combo_lbl: Label
 var _dmg_root: Control
 var _icons := {}   # 图标缓存（assets/ui 下的 SVG，白色字形乘色使用）
+var _ind_n := 0    # 屏幕上存活的受击方向箭头数
 
 func _icon(nm: String) -> Texture2D:
 	if not _icons.has(nm):
@@ -58,6 +59,35 @@ func _ready() -> void:
 func show_banner(title: String, sub := "") -> void:
 	var txt := title if sub == "" else "%s   %s" % [title, sub]
 	_show_banner(txt, MAGENTA, 3.0)
+
+## 受击方向指示：v=(相对相机的右向分量, 前向分量)，屏幕边缘红箭头 0.7s 淡出
+func show_damage_dir(v: Vector2) -> void:
+	if v.length() < 0.05 or _ind_n >= 6:
+		return
+	var dn: Vector2 = v.normalized()
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var center: Vector2 = vs * 0.5
+	var radius: float = minf(vs.x, vs.y) * 0.36
+	var l := Label.new()
+	l.text = "▼"
+	l.add_theme_font_size_override("font_size", 46)
+	l.add_theme_color_override("font_color", RED)
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	l.add_theme_constant_override("shadow_offset_x", 2)
+	l.add_theme_constant_override("shadow_offset_y", 2)
+	l.size = Vector2(46, 46)
+	l.pivot_offset = Vector2(23, 23)
+	var s := Vector2(dn.x, -dn.y)
+	l.position = center + s * radius - Vector2(23, 23)
+	l.rotation = atan2(s.y, s.x) - PI * 0.5
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(l)
+	_ind_n += 1
+	var tw := create_tween()
+	tw.tween_property(l, "modulate", Color(1, 1, 1, 0), 0.7)
+	tw.tween_callback(func() -> void:
+		_ind_n -= 1
+		l.queue_free())
 
 # ---------- 搭建 ----------
 func _build() -> void:
