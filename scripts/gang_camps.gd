@@ -42,6 +42,12 @@ func _setup() -> void:
 		add_child(beam)
 		_st.append({"state": 0, "wave": 0, "remaining": 0, "next_t": 0.0,
 			"ring": ring, "beam": beam, "gy": gy, "enemies": []})
+	# 小地图常驻显示未清剿据点
+	if minimap:
+		for i in CAMPS.size():
+			minimap.add_marker("camp_%d" % i,
+				Vector3(float(CAMPS[i]["x"]), 0.0, float(CAMPS[i]["z"])),
+				Color(0.85, 0.25, 1.0), "帮派据点")
 
 func _process(delta: float) -> void:
 	if player == null:
@@ -86,6 +92,7 @@ func _spawn_wave(i: int) -> void:
 	var w: int = int(s["wave"])
 	var count: int = WAVES[w]
 	var gy: float = float(s["gy"])
+	var ranged_n: int = clampi(w, 0, count)   # 波0无枪手，波1一个，波2两个
 	for k in count:
 		var ang := TAU * float(k) / float(count) + float(i) * 0.7
 		var r := 7.0 + float((k + w) % 3) * 3.0
@@ -99,18 +106,27 @@ func _spawn_wave(i: int) -> void:
 		e.position = Vector3(ex, egy, ez)
 		add_child(e)
 		# setup 需在节点就绪前后调用均可（变量直接赋值）
-		e.setup(player, egy, Vector3(ex, gy, ez))
+		e.setup(player, egy, Vector3(ex, gy, ez), k < ranged_n)
 		var idx := i
-		e.died.connect(func(_n): _on_enemy_died(idx))
+		e.died.connect(func(n): _on_enemy_died(idx, n.ranged))
 		(s["enemies"] as Array).append(e)
 	s["remaining"] = count
-	_banner("第 %d / %d 波" % [w + 1, WAVES.size()], "%d 名帮派分子" % count, Color(1, 0.45, 0.3), 1.6)
+	var sub := "%d 名帮派分子" % count
+	if ranged_n > 0:
+		sub += "（%d 名枪手）" % ranged_n
+	_banner("第 %d / %d 波" % [w + 1, WAVES.size()], sub, Color(1, 0.45, 0.3), 1.6)
 
-func _on_enemy_died(i: int) -> void:
+func _on_enemy_died(i: int, is_ranged: bool = false) -> void:
 	var s: Dictionary = _st[i]
 	if int(s["state"]) != 1:
 		return
 	s["remaining"] = int(s["remaining"]) - 1
+	# 击杀掉落现金：枪手更富有
+	var drop_chance := 0.5 if is_ranged else 0.3
+	var drop_amt := 150 if is_ranged else 100
+	if randf() < drop_chance and player and "coins" in player:
+		player.coins += drop_amt
+		player.coin_collected.emit(player.coins)
 	if int(s["remaining"]) <= 0:
 		var w: int = int(s["wave"]) + 1
 		s["wave"] = w
@@ -228,6 +244,8 @@ func _apply_save(arr: Array) -> void:
 			s["state"] = 2
 			var ring: MeshInstance3D = s["ring"]
 			if ring and ring.material_override:
-				(ring.material_override as StandardMaterial3D).albedo_color = Color(0.2, 0.9, 0.4, 0.16)
+				(ring.material_override as StandardMaterial3D).albedo_color = Color(0.2, 0.9, 0.4)
 				(ring.material_override as StandardMaterial3D).emission = Color(0.2, 0.9, 0.4)
-				(ring.material_override as StandardMaterial3D).emission_energy_multiplier = 0.4
+				(ring.material_override as StandardMaterial3D).emission_energy_multiplier = 1.0
+			if minimap:
+				minimap.remove_marker("camp_%d" % i)

@@ -153,6 +153,11 @@ func _load_systems() -> void:
 	death.name = "DeathSystem"
 	death.set_script(load("res://scripts/death_fx.gd"))
 	add_child(death)
+	# 战绩/成就面板（B 键开关）
+	var panel := CanvasLayer.new()
+	panel.name = "StatsPanel"
+	panel.set_script(load("res://scripts/stats_panel.gd"))
+	add_child(panel)
 	call_deferred("_intro_tips")
 
 ## 开场玩法导览：延时轮播新内容提示

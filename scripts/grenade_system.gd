@@ -134,14 +134,21 @@ func _explode(pos: Vector3) -> void:
 	params.transform = Transform3D(Basis(), pos)
 	params.collide_with_areas = true
 	params.collide_with_bodies = true
-	params.collision_mask = 3
+	params.collision_mask = 7   # 1 世界 / 2 敌人命中区 / 4 行人
 	var hits: Array = sp.intersect_shape(params)
+	var npc_killed := 0
 	for h in hits:
 		var node: Object = h.collider if h is Dictionary else null
 		if node == null:
 			continue
 		if node is Node and (node as Node).is_in_group("player"):
 			continue   # 玩家单独按距离算
+		# 行人：炸倒并计入通缉
+		if node is Node and (node as Node).is_in_group("npc"):
+			if node.has_method("take_damage"):
+				node.take_damage(100.0)
+				npc_killed += 1
+			continue
 		var d := 0.0
 		if node is Node3D:
 			d = (node as Node3D).global_position.distance_to(pos)
@@ -155,6 +162,12 @@ func _explode(pos: Vector3) -> void:
 				break
 			cur = cur.get_parent()
 			hops += 1
+	# 误伤行人 → 通缉（爆炸行凶直接 2 星封顶）
+	if npc_killed > 0:
+		var wp := get_parent().get_node_or_null("WantedPolice")
+		if wp and wp.has_method("_add_star"):
+			wp._add_star(mini(2, npc_killed))
+		_toast("爆炸误伤行人！  通缉 +%d" % mini(2, npc_killed), Color(1, 0.3, 0.3))
 	# 玩家自伤
 	if player and is_instance_valid(player):
 		var pd: float = Vector2(player.global_position.x - pos.x,

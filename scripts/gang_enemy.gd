@@ -1,41 +1,52 @@
 extends Node3D
-## 帮派分子：据点战敌人。程序化黑衣胶囊 + 红眼，零资产依赖。
+## 帮派分子：据点战敌人。程序化胶囊体，零资产依赖。两种兵：
+##  - 近战（黑衣）：冲进近身挥击
+##  - 枪手（酒红）：保持 12~22m 距离风筝射击，有视线才开火，红色激光弹道
 ## HitArea 在 layer 2（武器射线 mask=3 命中），武器沿父链调 bullet_hit()。
-## 自驱 AI：玩家进仇恨圈追击，近身挥击；玩家逃离则回据点出生点。
 
 signal died(node: Node3D)
 
 const MAX_HP := 100.0
-const SPEED := 4.6
-const AGGRO_R := 48.0
-const LEASH_R := 85.0
+const MELEE_SPEED := 4.8
+const RANGED_SPEED := 3.6
+const AGGRO_R := 52.0
+const LEASH_R := 90.0
 const ATTACK_R := 3.0
 const ATTACK_CD := 0.85
 const DMG := 7.0
+const SHOOT_CD := 1.7
+const SHOOT_DMG := 6.0
+const RANGED_MIN := 12.0
+const RANGED_MAX := 22.0
 
 var hp := MAX_HP
 var ground_y := 0.0
 var home := Vector3.ZERO
 var alive := true
+var ranged := false
 
 var player: Node
 var _mat: StandardMaterial3D
+var _head_mat: StandardMaterial3D
 var _flash := 0.0
 var _cd := 0.0
+var _muzzle: Node3D
+var _muzzle_light: OmniLight3D
 
-func setup(p: Node, gy: float, h: Vector3) -> void:
+func setup(p: Node, gy: float, h: Vector3, is_ranged: bool = false) -> void:
 	player = p
 	ground_y = gy
 	home = h
+	ranged = is_ranged
 
 func _ready() -> void:
-	name = "帮派分子"
+	name = "帮派枪手" if ranged else "帮派分子"
 	_build()
 	set_physics_process(true)
 
 func _build() -> void:
 	_mat = StandardMaterial3D.new()
-	_mat.albedo_color = Color(0.08, 0.08, 0.11)
+	_mat.albedo_color = Color(0.36, 0.1, 0.15) if ranged else Color(0.08, 0.08, 0.11)
 	_mat.roughness = 0.7
 	var body_mi := MeshInstance3D.new()
 	var cap := CapsuleMesh.new()
@@ -45,19 +56,43 @@ func _build() -> void:
 	body_mi.material_override = _mat
 	body_mi.position.y = 1.05
 	add_child(body_mi)
+	# 枪手加一条肩带（小黄块）便于辨认
+	if ranged:
+		var band := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.18, 0.5, 0.9)
+		band.mesh = bm
+		var bmat := StandardMaterial3D.new()
+		bmat.albedo_color = Color(0.9, 0.7, 0.2)
+		bmat.emission_enabled = true
+		bmat.emission = Color(0.8, 0.5, 0.1)
+		bmat.emission_energy_multiplier = 0.6
+		band.material_override = bmat
+		band.position = Vector3(0.35, 1.35, 0.0)
+		band.rotation.z = 0.5
+		add_child(band)
+	_head_mat = StandardMaterial3D.new()
+	_head_mat.albedo_color = Color(0.25, 0.12, 0.12)
+	_head_mat.emission_enabled = true
+	_head_mat.emission = Color(0.9, 0.12, 0.1) if ranged else Color(0.6, 0.05, 0.05)
+	_head_mat.emission_energy_multiplier = 1.2 if ranged else 0.8
 	var head := MeshInstance3D.new()
 	var sph := SphereMesh.new()
 	sph.radius = 0.32
 	sph.height = 0.64
-	var hm := StandardMaterial3D.new()
-	hm.albedo_color = Color(0.25, 0.12, 0.12)
-	hm.emission_enabled = true
-	hm.emission = Color(0.6, 0.05, 0.05)
-	hm.emission_energy_multiplier = 0.8
 	head.mesh = sph
-	head.material_override = hm
+	head.material_override = _head_mat
 	head.position.y = 2.25
 	add_child(head)
+	# 枪口发光点（枪手）
+	if ranged:
+		_muzzle = Node3D.new()
+		_muzzle.position = Vector3(0.0, 1.6, -0.7)
+		var ml := OmniLight3D.new()
+		ml.light_color = Color(1, 0.25, 0.15)
+		_muzzle_light = ml
+		_muzzle.add_child(ml)
+		add_child(_muzzle)
 	var lamp := OmniLight3D.new()
 	lamp.light_color = Color(1, 0.2, 0.15)
 	lamp.light_energy = 1.2
@@ -93,26 +128,117 @@ func _physics_process(delta: float) -> void:
 	if not alive or player == null:
 		return
 	_flash = maxf(0.0, _flash - delta)
+	if _muzzle_light and _muzzle_light.light_energy > 0.0:
+		_muzzle_light.light_energy = maxf(0.0, _muzzle_light.light_energy - delta * 40.0)
 	if _mat:
-		_mat.albedo_color = Color(0.8, 0.15, 0.15) if _flash > 0.0 else Color(0.08, 0.08, 0.11)
+		_mat.albedo_color = Color(0.85, 0.2, 0.2) if _flash > 0.0 else (
+			Color(0.36, 0.1, 0.15) if ranged else Color(0.08, 0.08, 0.11))
 	_cd = maxf(0.0, _cd - delta)
 	var pp: Vector3 = player.global_position
-	var d := Vector3(pp.x - global_position.x, 0.0, pp.z - global_position.z).length()
-	var target := pp
-	var chasing := d < AGGRO_R and d < LEASH_R
-	if not chasing:
-		target = home
-		if global_position.distance_to(home) <= 3.0:
-			return
-	var move_dir: Vector3 = target - global_position
-	move_dir.y = 0.0
-	if move_dir.length() > 0.5:
-		var spd := SPEED if chasing else SPEED * 0.7
-		global_position += move_dir.normalized() * spd * delta
-		var yaw: float = atan2(move_dir.x, move_dir.z)
-		rotation.y = lerp_angle(rotation.y, yaw, clampf(delta * 8.0, 0.0, 1.0))
+	var flat := Vector3(pp.x - global_position.x, 0.0, pp.z - global_position.z)
+	var d := flat.length()
+	if d >= LEASH_R or d >= AGGRO_R and not ranged:
+		# 脱战回家
+		if global_position.distance_to(home) > 3.0:
+			_move_toward(home, MELEE_SPEED * 0.7, delta)
+		return
+	if ranged:
+		_ranged_behavior(pp, d, delta)
+	else:
+		_melee_behavior(pp, d, delta)
 	global_position.y = ground_y
-	if chasing and d < ATTACK_R and _cd <= 0.0:
+
+func _melee_behavior(pp: Vector3, d: float, delta: float) -> void:
+	if d > 0.5:
+		_move_toward(pp, MELEE_SPEED, delta)
+	if d < ATTACK_R and _cd <= 0.0:
 		_cd = ATTACK_CD
 		if player.has_method("take_damage"):
 			player.take_damage(DMG)
+
+func _ranged_behavior(pp: Vector3, d: float, delta: float) -> void:
+	# 风筝：太远逼近，太近后撤，区间内站定瞄准
+	var move_target := Vector3.ZERO
+	var moving := false
+	if d > RANGED_MAX:
+		move_target = pp
+		moving = true
+	elif d < RANGED_MIN:
+		# 朝远离玩家方向退
+		move_target = global_position + Vector3(global_position.x - pp.x, 0,
+			global_position.z - pp.z)
+		moving = true
+	if moving:
+		_move_toward(move_target, RANGED_SPEED, delta)
+	# 面向玩家
+	var aim := Vector3(pp.x - global_position.x, 0, pp.z - global_position.z)
+	if aim.length() > 0.1:
+		var yaw: float = atan2(aim.x, aim.z)
+		rotation.y = lerp_angle(rotation.y, yaw, clampf(delta * 8.0, 0.0, 1.0))
+	# 视线内才开火
+	if _cd <= 0.0 and d > RANGED_MIN - 2.0 and d < AGGRO_R and _has_line_of_sight(pp):
+		_cd = SHOOT_CD
+		_shoot(pp)
+
+func _move_toward(target: Vector3, spd: float, delta: float) -> void:
+	var dirv: Vector3 = target - global_position
+	dirv.y = 0.0
+	if dirv.length() > 0.5:
+		global_position += dirv.normalized() * spd * delta
+		var yaw: float = atan2(dirv.x, dirv.z)
+		rotation.y = lerp_angle(rotation.y, yaw, clampf(delta * 8.0, 0.0, 1.0))
+
+## 世界遮挡检测：射线被墙挡住则无视线；打到玩家/载具附近算可见
+func _has_line_of_sight(pp: Vector3) -> bool:
+	var sp := get_world_3d().direct_space_state
+	var from := global_position + Vector3.UP * 1.6
+	var to := pp + Vector3.UP * 1.2
+	var q := PhysicsRayQueryParameters3D.create(from, to, 1)
+	var hit: Dictionary = sp.intersect_ray(q)
+	if hit.is_empty():
+		return true   # 无碰撞=完全通透
+	var hp2: Vector3 = hit.position
+	return hp2.distance_to(to) < 2.6
+
+func _shoot(pp: Vector3) -> void:
+	var from := global_position + Vector3.UP * 1.6 - global_transform.basis.z * 0.8
+	var to := pp + Vector3.UP * 1.1
+	if _muzzle_light:
+		_muzzle_light.light_energy = 4.0
+	_tracer(from, to)
+	# 命中：玩家不动时 9 成命中，跑动中 6 成
+	var moving := _speed() > 6.0
+	var hit_chance := 0.6 if moving else 0.9
+	if randf() < hit_chance and player.has_method("take_damage"):
+		player.take_damage(SHOOT_DMG)
+
+func _speed() -> float:
+	if player is CharacterBody3D:
+		return (player as CharacterBody3D).velocity.length()
+	return 0.0
+
+## 红色激光弹道，0.1 秒后消失
+func _tracer(from: Vector3, to: Vector3) -> void:
+	var holder := get_parent()
+	if holder == null:
+		return
+	var line := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	var lenv: float = from.distance_to(to)
+	bm.size = Vector3(0.08, 0.08, maxf(0.1, lenv))
+	line.mesh = bm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1, 0.25, 0.15)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.emission = Color(1, 0.2, 0.1)
+	mat.emission_energy_multiplier = 2.0
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	line.material_override = mat
+	holder.add_child(line)
+	line.global_position = (from + to) * 0.5
+	line.look_at(to, Vector3.UP)
+	# BoxMesh 长轴是 y，look_at 让 -z 朝目标，需要把长轴转到 z
+	line.rotate_object_local(Vector3.RIGHT, deg_to_rad(90.0))
+	var t := get_tree().create_timer(0.1)
+	t.timeout.connect(line.queue_free)

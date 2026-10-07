@@ -46,6 +46,11 @@ func _setup() -> void:
 	minimap = get_parent().get_node_or_null("Minimap")
 	_build_start_markers()
 	_build_cp_marker()
+	# 小地图常驻显示 3 个竞速入口
+	if minimap:
+		for i in races.size():
+			var p0: Vector3 = (races[i]["pts"] as Array)[0]
+			minimap.add_marker("race_%d" % i, p0, Color(1.0, 0.82, 0.2), "竞速")
 
 # ---------- 起点光柱（每条赛道一个，黄色常驻） ----------
 func _build_start_markers() -> void:

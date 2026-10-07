@@ -1,137 +1,189 @@
-extends Control
+extends CanvasLayer
+## 战绩与成就面板（B 键开关）。仿 GTA 手机风格，不暂停游戏但锁定玩家输入。
+## 数据全部读自 StatsSystem；成就解锁状态以 stats.has(id) 为准。
 
-## 统计/成就面板：击杀/里程/金币/任务/撞人/通缉
-## 挂 PauseMenu 下，ESC 或再次按"统计/成就"行关闭
+var _sys: Node
+var player: Node
+var _open := false
 
-var _panel: Control
-var _rows := {}
-var _visible := false
+var _root: Control
+var _stats_box: VBoxContainer
+var _ach_box: VBoxContainer
 
 func _ready() -> void:
-	visible = false
+	layer = 20
+	_register_input()
+	_sys = get_parent().get_node_or_null("StatsSystem")
 	_build()
+	_root.visible = false
+
+func _register_input() -> void:
+	if not InputMap.has_action("stats_panel"):
+		InputMap.add_action("stats_panel")
+	var ev := InputEventKey.new()
+	ev.physical_keycode = KEY_B
+	InputMap.action_add_event("stats_panel", ev)
+
+var _rt := 0.0
+
+func _process(delta: float) -> void:
+	if Input.is_action_just_pressed("stats_panel"):
+		_toggle()
+	if _open:
+		_rt += delta
+		if _rt >= 0.25:
+			_rt = 0.0
+			_refresh_stats()   # 金币等定时刷新
 
 func _build() -> void:
-	_panel = Control.new()
-	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_panel.size = Vector2(520, 420)
-	_panel.position = Vector2(-260, -210)
-	add_child(_panel)
+	_root = Control.new()
+	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_root)
 
-	var bg := Panel.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.add_theme_stylebox_override("panel", _style(Color(0.03, 0.05, 0.10, 0.94), Color(1, 0.85, 0.25), 3, 14))
-	_panel.add_child(bg)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.03, 0.06, 0.62)
+	_root.add_child(dim)
+
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(940, 660)
+	var pstyle := StyleBoxFlat.new()
+	pstyle.bg_color = Color(0.08, 0.1, 0.15, 0.97)
+	pstyle.border_color = Color(0.95, 0.72, 0.2)
+	pstyle.set_border_width_all(2)
+	pstyle.set_corner_radius_all(10)
+	pstyle.set_content_margin_all(20)
+	panel.add_theme_stylebox_override("panel", pstyle)
+	_root.add_child(panel)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	panel.add_child(col)
 
 	var title := Label.new()
-	title.text = "📊  统 计  /  成 就"
-	title.add_theme_font_size_override("font_size", 32)
-	title.add_theme_color_override("font_color", Color(1, 0.85, 0.25))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 20)
-	title.size = Vector2(520, 40)
-	_panel.add_child(title)
-
-	var items := [
-		["kills",      "击杀数",       "0"],
-		["distance",   "跑图里程",     "0 m"],
-		["coins",      "累计金币",     "0"],
-		["quests",     "任务完成",     "0/6"],
-		["npc_hits",   "撞倒NPC",      "0"],
-		["wanted_max", "最高通缉",     "0星"],
-		["days",       "存活天数",     "1天"],
-	]
-	var y := 90
-	for it in items:
-		var lbl := Label.new()
-		lbl.text = it[1]
-		lbl.add_theme_font_size_override("font_size", 20)
-		lbl.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
-		lbl.position = Vector2(60, y)
-		lbl.size = Vector2(200, 28)
-		_panel.add_child(lbl)
-		var val := Label.new()
-		val.name = it[0]
-		val.text = it[2]
-		val.add_theme_font_size_override("font_size", 20)
-		val.add_theme_color_override("font_color", Color(1, 0.85, 0.25))
-		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		val.position = Vector2(260, y)
-		val.size = Vector2(200, 28)
-		_panel.add_child(val)
-		_rows[it[0]] = val
-		y += 42
+	title.text = "港城战绩"
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color(1, 0.82, 0.3))
+	col.add_child(title)
 
 	var hint := Label.new()
-	hint.text = "ESC 或再选一次返回"
-	hint.add_theme_font_size_override("font_size", 15)
-	hint.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(0, 380)
-	hint.size = Vector2(520, 24)
-	_panel.add_child(hint)
+	hint.text = "按 B 关闭"
+	hint.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
+	col.add_child(hint)
 
-func _style(bg: Color, border: Color, bw: int, rad: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(bw)
-	s.set_corner_radius_all(rad)
-	s.shadow_color = Color(border, 0.35)
-	s.shadow_size = 14
-	return s
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 28)
+	hb.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(hb)
 
-func show_stats() -> void:
-	visible = true
-	_visible = true
-	_refresh()
+	var left := VBoxContainer.new()
+	left.custom_minimum_size = Vector2(380, 0)
+	left.add_theme_constant_override("separation", 8)
+	hb.add_child(left)
+	var st_title := Label.new()
+	st_title.text = "— 数据 —"
+	st_title.add_theme_color_override("font_color", Color(0.5, 0.8, 1))
+	left.add_child(st_title)
+	_stats_box = VBoxContainer.new()
+	_stats_box.add_theme_constant_override("separation", 6)
+	left.add_child(_stats_box)
 
-func hide_stats() -> void:
-	visible = false
-	_visible = false
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 8)
+	hb.add_child(right)
+	var ac_title := Label.new()
+	ac_title.text = "— 成就 —"
+	ac_title.add_theme_color_override("font_color", Color(0.5, 0.8, 1))
+	right.add_child(ac_title)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right.add_child(scroll)
+	_ach_box = VBoxContainer.new()
+	_ach_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_ach_box.add_theme_constant_override("separation", 5)
+	scroll.add_child(_ach_box)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if _visible and event.is_action_pressed("ui_cancel"):
-		hide_stats()
-		get_viewport().set_input_as_handled()
+	_refresh_stats()
+	_refresh_achievements()
 
-func _refresh() -> void:
-	var p = get_tree().get_first_node_in_group("player")
-	if p == null:
+func _toggle() -> void:
+	_open = not _open
+	_root.visible = _open
+	if player == null:
+		player = get_tree().get_first_node_in_group("player")
+	if player and "input_locked" in player:
+		player.input_locked = _open
+	if _open:
+		_refresh_stats()
+		_refresh_achievements()
+
+func _add_stat_row(text: String) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 17)
+	_stats_box.add_child(l)
+
+func _refresh_stats() -> void:
+	if _sys == null:
 		return
-	# 击杀/里程（player 累计）
-	_set_stat("kills", str(int(p.get("_kills") if p.get("_kills") != null else 0)))
-	var dist: float = p.get("_distance") if p.get("_distance") != null else 0.0
-	_set_stat("distance", "%d m" % int(dist))
-	_set_stat("coins", str(int(p.get("coins"))))
-	# 任务完成数（quest + fun 三件套 + 老头）
-	var done := 0
-	var qs = get_tree().root.find_child("QuestSystem", true, false)
-	# quest Stage.DONE=5（0 IDLE→5 DONE）
-	if qs and int(qs.get("stage")) >= 5:
-		done += 1
-	var fn = get_tree().root.find_child("FunNpcs", true, false)
-	if fn:
-		# fun_npcs 的阶段变量是 fstage/bstage/cstage，DONE=2
-		if (fn.get("fstage") as int) >= 2:
-			done += 1
-		if (fn.get("bstage") as int) >= 2:
-			done += 1
-		if (fn.get("cstage") as int) >= 2:
-			done += 1
-	# oldman CStage.DONE=5
-	var om = get_tree().root.find_child("OldmanQuest", true, false)
-	if om and (om.get("cstage") as int) >= 5:
-		done += 1
-	_set_stat("quests", "%d/6" % done)
-	# 撞人
-	var wp = get_tree().root.find_child("WantedPolice", true, false)
-	_set_stat("npc_hits", str(int(wp.get("_npc_hits") if wp else 0)))
-	_set_stat("wanted_max", "%d星" % int(wp.get("_wanted_max") if wp else 0))
-	# 天数
-	var dn = get_tree().root.find_child("DayNight", true, false)
-	_set_stat("days", "%d天" % int(dn.day_idx if dn else 1))
+	var st: Dictionary = _sys.stats
+	var coins := 0
+	if player == null:
+		player = get_tree().get_first_node_in_group("player")
+	if player and "coins" in player:
+		coins = int(player.coins)
+	var shots: int = int(st.get("shots", 0))
+	var hitsv: int = int(st.get("hits", 0))
+	var acc := 0.0
+	if shots > 0:
+		acc = float(hitsv) / float(shots) * 100.0
+	for c in _stats_box.get_children():
+		c.queue_free()
+	_add_stat_row("金币：%d" % coins)
+	_add_stat_row("击杀：%d" % int(st.get("kills", 0)))
+	_add_stat_row("命中率：%.0f%%（%d/%d 发）" % [acc, hitsv, shots])
+	_add_stat_row("爆头：%d" % int(st.get("headshots", 0)))
+	_add_stat_row("隐藏包裹：%d / 20" % int(st.get("packages", 0)))
+	_add_stat_row("世界物资拾取：%d" % int(st.get("pickups", 0)))
+	_add_stat_row("竞速完成：%d 场" % int(st.get("races_done", 0)))
+	_add_stat_row("帮派据点：%d / 3 已清剿" % int(st.get("camps_cleared", 0)))
+	_add_stat_row("最远特技跳跃：%.1f m" % float(st.get("best_jump_dist", 0.0)))
+	_add_stat_row("游玩时长：%.0f 分钟" % float(st.get("play_minutes", 0.0)))
 
-func _set_stat(key: String, txt: String) -> void:
-	if _rows.has(key):
-		_rows[key].text = txt
+func _refresh_achievements() -> void:
+	if _sys == null:
+		return
+	var st: Dictionary = _sys.stats
+	var coins := 0
+	if player and "coins" in player:
+		coins = int(player.coins)
+	for c in _ach_box.get_children():
+		c.queue_free()
+	for a in _sys.ACH:
+		var got: bool = _sys.has(str(a["id"]))
+		var cur: float
+		if str(a["k"]) == "_coins":
+			cur = float(coins)
+		else:
+			cur = float(st.get(a["k"], 0))
+		var target: float = float(a["v"])
+		var l := Label.new()
+		l.text = "%s %s — %s（%s/%s）  +%d" % [
+			"[已达成]" if got else "[未达成]", str(a["n"]), str(a["d"]),
+			_fmt(cur), _fmt(target), int(a["r"])]
+		l.add_theme_font_size_override("font_size", 15)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if got:
+			l.add_theme_color_override("font_color", Color(1, 0.85, 0.35))
+		else:
+			l.add_theme_color_override("font_color", Color(0.62, 0.64, 0.7))
+		_ach_box.add_child(l)
+
+func _fmt(v: float) -> String:
+	if v == float(int(v)):
+		return str(int(v))
+	return "%.1f" % v
