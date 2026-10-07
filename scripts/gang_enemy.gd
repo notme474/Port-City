@@ -30,6 +30,10 @@ var _mat: StandardMaterial3D
 var _head_mat: StandardMaterial3D
 var _flash := 0.0
 var _cd := 0.0
+var _ram_cd := 0.0
+const RAM_SPEED := 9.0
+const RAM_DMG := 60.0
+const RAM_R := 3.4
 var _muzzle: Node3D
 var _muzzle_light: OmniLight3D
 
@@ -134,6 +138,8 @@ func _physics_process(delta: float) -> void:
 		_mat.albedo_color = Color(0.85, 0.2, 0.2) if _flash > 0.0 else (
 			Color(0.36, 0.1, 0.15) if ranged else Color(0.08, 0.08, 0.11))
 	_cd = maxf(0.0, _cd - delta)
+	_ram_cd = maxf(0.0, _ram_cd - delta)
+	_check_car_ram()
 	var pp: Vector3 = player.global_position
 	var flat := Vector3(pp.x - global_position.x, 0.0, pp.z - global_position.z)
 	var d := flat.length()
@@ -147,6 +153,33 @@ func _physics_process(delta: float) -> void:
 	else:
 		_melee_behavior(pp, d, delta)
 	global_position.y = ground_y
+
+## 驾驶车辆高速冲撞：直接受伤（敌人无物理碰撞体，用距离+车速判定）
+func _check_car_ram() -> void:
+	if _ram_cd > 0.0:
+		return
+	var holder := get_parent()
+	if holder == null:
+		return
+	var view: Node = holder.get_node_or_null("../View")
+	if view == null:
+		return
+	var car: Object = view.get("chase")
+	if car == null or not (car is Node3D) or not is_instance_valid(car):
+		return
+	var c: Node3D = car as Node3D
+	if Vector2(c.global_position.x - global_position.x,
+			c.global_position.z - global_position.z).length() > RAM_R:
+		return
+	var spd := 0.0
+	if car is CharacterBody3D:
+		spd = (car as CharacterBody3D).velocity.length()
+	if spd < RAM_SPEED:
+		return
+	_ram_cd = 0.7
+	bullet_hit(RAM_DMG)
+	if view.has_method("add_shake"):
+		view.add_shake(0.35)
 
 func _melee_behavior(pp: Vector3, d: float, delta: float) -> void:
 	if d > 0.5:
