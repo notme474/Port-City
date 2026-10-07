@@ -17,6 +17,7 @@ var minimap: CanvasLayer
 var hud_msg: Label
 var coin_lbl: Label
 var granny: Node3D
+var _granny_spawn := GRANNY_POS   # 实际落点（贴合地面后的坐标）
 var mechcat: Node3D
 var _mech_mdl: Node3D
 var _mech_light: OmniLight3D
@@ -36,12 +37,25 @@ func _setup() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	minimap = get_parent().get_node_or_null("Minimap")
 	_build_ui()
+	# 老奶奶落点贴合实际地面（探针实测该处人行道 y=7.35，常量 5.95 会陷进地里 1.4m）
+	_granny_spawn = Vector3(GRANNY_POS.x,
+		_ground_y(GRANNY_POS.x, GRANNY_POS.z, GRANNY_POS.y), GRANNY_POS.z)
 	_spawn_granny()
 	_spawn_mechcat()
 	_spawn_police_station()
 	if minimap:
-		minimap.add_marker("granny", GRANNY_POS, Color.YELLOW, "老奶奶")
+		minimap.add_marker("granny", _granny_spawn, Color.YELLOW, "老奶奶")
 	_msg("街上有个老奶奶（黄点），走进她脚下的黄色光圈就能接任务")
+
+## 从高处向下射线取地面高度（取不到时用 fallback）
+func _ground_y(x: float, z: float, fallback: float) -> float:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(Vector3(x, 40.0, z), Vector3(x, -40.0, z))
+	q.collision_mask = 1
+	var hit: Dictionary = space.intersect_ray(q)
+	if hit.is_empty():
+		return fallback
+	return (hit.position as Vector3).y
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
@@ -68,7 +82,7 @@ func _refresh_coins() -> void:
 func _spawn_granny() -> void:
 	granny = Node3D.new()
 	granny.name = "老奶奶"
-	granny.position = GRANNY_POS
+	granny.position = _granny_spawn
 	add_child(granny)
 	# KayKit 法师改造为老奶奶：原始模型含尖顶帽高达 3.0m，
 	# 隐藏帽子/法杖/法术书后身高约 2.2m，×0.72 ≈ 1.58m（符合老人身高规格）
@@ -96,7 +110,7 @@ func _spawn_granny() -> void:
 	body.add_child(gcs)
 	granny.add_child(body)
 	# GTA 式黄色任务光圈：走进圈即接任务
-	_spawn_quest_marker(GRANNY_POS, "帮老奶奶找猫")
+	_spawn_quest_marker(_granny_spawn, "帮老奶奶找猫")
 
 func _spawn_quest_marker(pos: Vector3, title: String) -> void:
 	var mk: Node = Node3D.new()
