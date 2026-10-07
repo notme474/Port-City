@@ -113,6 +113,11 @@ func _load_systems() -> void:
 	cols.name = "Collectibles"
 	cols.set_script(load("res://scripts/collectibles.gd"))
 	add_child(cols)
+	# 世界物资（血包/弹药/钱袋/消星，定时重生）
+	var drops := Node3D.new()
+	drops.name = "Pickups"
+	drops.set_script(load("res://scripts/pickups.gd"))
+	add_child(drops)
 	# 城市行人（layer 4，NPC 互不碰撞，沿道路散步，接入通缉撞人判定）
 	var npcs := Node3D.new()
 	npcs.name = "CityNpcs"
