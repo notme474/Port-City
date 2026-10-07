@@ -179,16 +179,20 @@ func _update_lights(night: bool, _imm: bool) -> void:
 		if not is_instance_valid(l):
 			continue
 		var base: float = d.base_energy
+		var des: float
 		# 车大灯特殊：白天也留一点示宽（0.15），晚上满功率
 		if d.is_car:
-			l.light_energy = base * (0.15 + 0.85 * target)
+			des = base * (0.15 + 0.85 * target)
 		else:
 			# 任务灯（鱼灯/舞灯/头盔）本身就是功能灯，白天也保持功能亮度，夜景只是强化
 			var nm := str(l.name)
 			if nm.contains("fish") or nm.contains("dance") or nm.contains("helmet") or nm.contains("boss"):
-				l.light_energy = base * (0.5 + 0.5 * target)   # 夜景强化但不灭
+				des = base * (0.5 + 0.5 * target)   # 夜景强化但不灭
 			else:
-				l.light_energy = base * target
+				des = base * target
+		# 向目标亮度平滑过渡（约 1 秒）：黄昏黎明不再全部城市灯同帧硬切，
+		# 避免低配机上整批灯开关造成一次性渲染尖峰卡顿
+		l.light_energy = lerpf(l.light_energy, des, 0.08)
 
 ## 外部查询：给 HUD/任务用
 func get_time_str() -> String:

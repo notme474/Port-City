@@ -32,6 +32,7 @@ var _fire_t := 9.0
 var _combo := 0
 var _combo_t := 0.0
 var _banner_t := 0.0
+var _banner_dur := 0.0
 var _banner_text := ""
 var _banner_color := Color.WHITE
 var _hint_t := 14.0
@@ -208,6 +209,7 @@ func _show_banner(text: String, color: Color, dur := 1.4) -> void:
 	_banner_text = text
 	_banner_color = color
 	_banner_t = dur
+	_banner_dur = dur
 
 # ---------- 每帧 ----------
 func _process(delta: float) -> void:
@@ -484,7 +486,11 @@ func _draw_banner(vp: Vector2) -> void:
 	if _banner_t <= 0.0:
 		return
 	var a := clampf(_banner_t / 0.3, 0.0, 1.0) if _banner_t < 1.0 else 1.0
-	var pop := 1.0 + 0.25 * exp(-(1.4 - _banner_t) * 10.0)
+	# 弹出动画：从生成时刻起 0.3s 内 1.25→1.0 收敛。
+	# 旧公式 exp(-(1.4-_banner_t)*10) 在长横幅开局 exp(12)≈16万倍：字号 138 万导致
+	# TextServer 缓存失败刷屏报错（hb_font null），底板矩形糊满全屏品红（整屏变紫）并卡顿。
+	var elapsed: float = clampf(_banner_dur - _banner_t, 0.0, 2.0)
+	var pop := 1.0 + 0.25 * exp(-elapsed * 10.0)
 	var font := ThemeDB.fallback_font
 	# get_string_size 第 3 个位置参数是换行宽度而非字号，字号是第 4 个（曾误传 34 导致横幅被压成 94px 宽、文字不可见）
 	var w2 := font.get_string_size(_banner_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 34).x + 60
