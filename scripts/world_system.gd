@@ -106,6 +106,18 @@ func _build_gang_platform() -> void:
 	br.position = Vector3(737.5, top_y - 0.4, 400.0)
 	add_child(br)
 	_add_box_col(self, Vector3(737.5, top_y - 1.0, 400.0), Vector3(21, 2, 8))
+	# 栈桥护栏（两侧，1.1m 高可跳过；桥窄防群殴撤离时失足坠海）
+	var rail_mat := _mat(Color(0.32, 0.34, 0.38), 0.5)
+	rail_mat.metallic = 0.4
+	for rz in [396.0, 404.0]:
+		var rail := MeshInstance3D.new()
+		var rm2 := BoxMesh.new()
+		rm2.size = Vector3(21, 1.1, 0.3)
+		rail.mesh = rm2
+		rail.material_override = rail_mat
+		rail.position = Vector3(737.5, top_y + 0.55, rz)
+		add_child(rail)
+		_add_box_col(self, Vector3(737.5, top_y + 0.55, rz), Vector3(21, 1.1, 0.3))
 	# 桥桩（装饰）
 	for px in [730.0, 737.5, 745.0]:
 		var pile := MeshInstance3D.new()
