@@ -23,6 +23,11 @@ func _load_systems() -> void:
 	mm.name = "Minimap"
 	mm.set_script(load("res://scripts/minimap.gd"))
 	add_child(mm)
+	# Vice City 风格后期（色散/暗角/颗粒/冷暖分级）
+	var fx := CanvasLayer.new()
+	fx.name = "PostFX"
+	fx.set_script(load("res://scripts/post_fx.gd"))
+	add_child(fx)
 	# 任务系统（含警察）
 	var qs := Node3D.new()
 	qs.name = "QuestSystem"

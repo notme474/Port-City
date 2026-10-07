@@ -8,11 +8,12 @@ signal day_changed(day_idx: int)
 const DAY_LEN := 480.0          # 现实 8 分钟 = 游戏一昼夜（8h*60s/480s=0.5, 方便调）
 const NIGHT_LIGHT_ON := 0.28    # 日落到凌晨开灯
 const NIGHT_LIGHT_OFF := 0.78   # 清晨关灯
-const SKY_DAY := Color(0.62, 0.72, 0.92)
-const SKY_DAWN := Color(0.95, 0.52, 0.35)
-const SKY_NIGHT := Color(0.06, 0.08, 0.16)
-const AMBIENT_DAY := Color(0.80, 0.84, 0.92)
-const AMBIENT_NIGHT := Color(0.18, 0.22, 0.42)
+# Vice City 调色板：迈阿密青蓝白天 / 品红橙黄昏 / 紫蓝深夜
+const SKY_DAY := Color(0.38, 0.68, 0.96)
+const SKY_DAWN := Color(1.0, 0.38, 0.5)
+const SKY_NIGHT := Color(0.05, 0.07, 0.18)
+const AMBIENT_DAY := Color(0.92, 0.9, 0.96)
+const AMBIENT_NIGHT := Color(0.2, 0.22, 0.45)
 
 var sun: DirectionalLight3D
 var env: Environment
@@ -120,15 +121,15 @@ func _apply(immediate: bool) -> void:
 		sun_energy = lerpf(1.0, 0.55, f)
 		moon_energy = 0.0
 		bg_mult = lerpf(1.0, 0.6, f)
-		tone_exp = lerpf(0.9, 0.75, f)
+		tone_exp = lerpf(1.0, 0.8, f)
 	elif day_phase < 0.35:        # 黄昏
 		var f := (day_phase - 0.25) / 0.1
 		sky_col = SKY_DAWN.lerp(SKY_NIGHT, f)
-		amb_col = AMBIENT_DAY.lerp(Color(0.35, 0.32, 0.5), f)
+		amb_col = AMBIENT_DAY.lerp(Color(0.4, 0.3, 0.52), f)
 		sun_energy = lerpf(0.55, 0.0, f)
 		moon_energy = lerpf(0.0, 0.28, f)
 		bg_mult = lerpf(0.6, 0.25, f)
-		tone_exp = lerpf(0.75, 0.55, f)
+		tone_exp = lerpf(0.8, 0.6, f)
 	elif day_phase < 0.75:        # 深夜
 		var f := (day_phase - 0.35) / 0.4
 		sky_col = SKY_NIGHT
@@ -136,7 +137,7 @@ func _apply(immediate: bool) -> void:
 		sun_energy = 0.0
 		moon_energy = 0.28 * (0.7 + 0.3 * sin(f * TAU))
 		bg_mult = 0.18
-		tone_exp = 0.42
+		tone_exp = 0.45
 	else:                         # 黎明→上午
 		var f := (day_phase - 0.75) / 0.25
 		sky_col = SKY_NIGHT.lerp(SKY_DAY, f * f)
@@ -144,12 +145,12 @@ func _apply(immediate: bool) -> void:
 		sun_energy = lerpf(0.0, 1.0, f)
 		moon_energy = lerpf(0.28, 0.0, f)
 		bg_mult = lerpf(0.18, 1.0, f)
-		tone_exp = lerpf(0.42, 0.9, f)
+		tone_exp = lerpf(0.45, 1.0, f)
 
-	# 太阳颜色随高度变暖（日出日落偏橙）
+	# 太阳颜色随高度变暖（VC 金橙色阳光，日出日落偏品红橙）
 	if sun_energy > 0.01:
 		var h := clampf(abs(sun_ang) / 90.0, 0.0, 1.0)  # 0=平线 1=头顶
-		sun.light_color = Color(1.0, 0.75 + 0.22 * h, 0.55 + 0.35 * h)
+		sun.light_color = Color(1.0, 0.72 + 0.2 * h, 0.5 + 0.3 * h)
 		sun.light_energy = sun_energy
 	else:
 		sun.light_energy = 0.0
