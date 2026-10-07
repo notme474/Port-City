@@ -118,6 +118,11 @@ func _load_systems() -> void:
 	drops.name = "Pickups"
 	drops.set_script(load("res://scripts/pickups.gd"))
 	add_child(drops)
+	# 检查点竞速（3 条赛道，评级奖金）
+	var race := Node3D.new()
+	race.name = "RaceSystem"
+	race.set_script(load("res://scripts/race_system.gd"))
+	add_child(race)
 	# 城市行人（layer 4，NPC 互不碰撞，沿道路散步，接入通缉撞人判定）
 	var npcs := Node3D.new()
 	npcs.name = "CityNpcs"

@@ -81,6 +81,10 @@ func _collect() -> Dictionary:
 	var col := get_parent().get_node_or_null("Collectibles")
 	if col:
 		d["packages_data"] = col.get_save()
+	# 竞速最佳成绩
+	var race := get_parent().get_node_or_null("RaceSystem")
+	if race:
+		d["race_data"] = race.get_save()
 	return d
 
 func save_game() -> void:
@@ -167,6 +171,10 @@ func _load() -> void:
 	var col2 := get_parent().get_node_or_null("Collectibles")
 	if col2 and d.has("packages_data"):
 		col2.set_save(d["packages_data"])
+	# 竞速最佳成绩
+	var race2 := get_parent().get_node_or_null("RaceSystem")
+	if race2 and d.has("race_data"):
+		race2.set_save(d["race_data"])
 	emit_signal("save_loaded")
 
 func _notification(what: int) -> void:
