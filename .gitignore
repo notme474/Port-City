@@ -1,28 +1,20 @@
-# Godot 4+ specific ignores
+# Godot 4+ 特定的忽略文件
 .godot/
 
-# Godot-specific ignores
-.import/
-export.cfg
-export_presets.cfg
-
-# Godot exported files
+# Godot 导出的文件
 export/
 build/
 *.exe
 *.pck
 *.zip
 
-# Editor temp artifacts
-~*
+# C# / .NET 忽略文件
+.vs/
+bin/
+obj/
+*.user
+*.userprefs
 
-# Imported translations (automatically generated from CSV files)
-*.translation
-
-# Mono-specific ignores
-.mono/
-data_*/
-mono_crash.*.json
-
-# Kenney ignores
-build/
+# 系统文件
+.DS_Store
+Thumbs.db
