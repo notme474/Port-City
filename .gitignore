@@ -6,6 +6,16 @@
 export.cfg
 export_presets.cfg
 
+# Godot exported files
+export/
+build/
+*.exe
+*.pck
+*.zip
+
+# Editor temp artifacts
+~*
+
 # Imported translations (automatically generated from CSV files)
 *.translation
 
